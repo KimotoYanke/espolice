@@ -1,0 +1,17 @@
+{
+  "name": "espolice",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "repository": "https://github.com/KimotoYanke/espolice",
+  "author": "KimotoYanke <kimotoyanke@gmail.com>",
+  "license": "Apache",
+  "dependencies": {
+    "@babel/types": "^7.4.4",
+    "chokidar": "^3.0.0"
+  },
+  "devDependencies": {
+    "@babel/generator": "^7.4.4",
+    "@types/node": "^12.0.4",
+    "typescript": "^3.5.1"
+  }
+}
