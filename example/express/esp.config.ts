@@ -17,4 +17,4 @@ const RoutesDir: DirNodeRule = dir()
 
 const RootDir: DirNodeRule = dir().haveChildDir(RoutesDir, "routes");
 
-mount(".", RootDir);
+mount({}, RootDir, ".");

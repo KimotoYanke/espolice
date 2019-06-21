@@ -4,25 +4,83 @@ import * as path from "path";
 import * as t from "@babel/types";
 import * as fs from "fs";
 import { NodeRule } from "../rule";
-import { State } from "../state";
+import { State } from "./state";
 import generate from "@babel/generator";
 
 type PseudoNode = PseudoDirectory | PseudoFile;
 
-type PseudoDirectory = {
+class PseudoDirectory<StateDataType = {}> {
   type: "dir";
-  name: string;
+  get name(): string {
+    return path.basename(this.pathFromRoot);
+  }
+  pathFromRoot: string;
   children: (PseudoNode)[];
-};
+  stateData: StateDataType;
+  parent: PseudoDirectory | null;
 
-type PseudoFile = {
-  type: "name";
-  name: string;
-  ast?: t.File;
-};
+  findNodeRule(root: DirNodeRule): DirNodeRule {
+    return findNodeRule(this.pathFromRoot, root) as DirNodeRule;
+  }
 
-const readdirAsPseudoDirectory = (p: string, opts?: { ignore: string[] }) => {
-  return fs
+  findNodeFromThis(pathFromThis: string | string[]): PseudoNode | null {
+    const [childPath, ...splittedPathFromChild] =
+      pathFromThis instanceof Array
+        ? pathFromThis
+        : path.join(pathFromThis).split("/");
+
+    if (!childPath) {
+      return this;
+    }
+
+    const foundChild = this.children.find((node: PseudoNode) => {
+      return node && node.name === childPath;
+    });
+
+    if (foundChild) {
+      if (splittedPathFromChild.length === 0) {
+        return foundChild;
+      }
+      if (foundChild.type === "dir") {
+        return foundChild.findNodeFromThis(splittedPathFromChild);
+      }
+    }
+    return null;
+  }
+
+  get state(): State<StateDataType, {}> {
+    return {
+      parent: this.parent ? this.parent.state : null,
+      ...this.stateData
+    };
+  }
+  constructor(pathFromRoot: string, stateData: StateDataType) {
+    this.type = "dir";
+    this.pathFromRoot = pathFromRoot;
+    this.stateData = stateData;
+  }
+}
+
+class PseudoFile {
+  type: "file";
+  pathFromRoot: string;
+  get name(): string {
+    return path.basename(this.pathFromRoot);
+  }
+
+  ast: t.File;
+  constructor(pathFromRoot: string) {
+    this.type = "file";
+    this.pathFromRoot = pathFromRoot;
+  }
+}
+
+const readdirAsPseudoDirectory = (
+  p: string,
+  getParent?: () => PseudoDirectory,
+  opts?: { ignore: string[] }
+): PseudoDirectory => {
+  const nodes = fs
     .readdirSync(p)
     .map(
       (childName: string): PseudoNode => {
@@ -31,25 +89,33 @@ const readdirAsPseudoDirectory = (p: string, opts?: { ignore: string[] }) => {
           return;
         }
         if (fs.statSync(pathFromRoot).isDirectory()) {
-          const result: PseudoDirectory = {
-            type: "dir",
-            name: childName,
-            children: readdirAsPseudoDirectory(pathFromRoot, opts)
-          };
+          const result: PseudoDirectory = new PseudoDirectory(pathFromRoot, {});
+          result.children = readdirAsPseudoDirectory(
+            pathFromRoot,
+            () => result,
+            opts
+          ).children;
+          result.parent = getParent ? getParent() : undefined;
+
           return result;
         }
 
-        const result: PseudoFile = {
-          type: "name",
-          name: childName
-        };
+        const result: PseudoFile = new PseudoFile(pathFromRoot);
         return result;
       }
     )
     .filter(v => !!v);
+
+  const dir = new PseudoDirectory(p, {});
+  dir.children = nodes;
+  return dir;
 };
 
-const findNode = (splittedPath: string[], node: DirNodeRule) => {
+const findNodeRule = (
+  pathFromRoot: string,
+  rootNodeRule: DirNodeRule
+): NodeRule => {
+  const splittedPath = path.join(pathFromRoot).split("/");
   const nodes = splittedPath.reduce<NodeRule>(
     (prev, current: string, currentIndex, array) => {
       if (prev === null) {
@@ -72,34 +138,47 @@ const findNode = (splittedPath: string[], node: DirNodeRule) => {
 
       return prev.childDirNodes[current] || prev.otherDirNode || null;
     },
-    node
+    rootNodeRule
   );
   return nodes;
 };
 
-export const mount = (rootPath: string, rootNode: DirNodeRule) => {
+type Options = {
+  loserMode: boolean;
+};
+
+export const mount = (
+  rootState: State<{}, null>,
+  rootNodeRule: DirNodeRule,
+  rootPath: string,
+  options?: Partial<Options>
+) => {
   const watcher = chokidar.watch(rootPath, {
-    persistent: true
+    persistent: true,
+    ignoreInitial: true
   });
-  const root: PseudoNode[] = readdirAsPseudoDirectory(rootPath, {
-    ignore: ["node_modules", ".git"]
-  });
+  const root: PseudoDirectory = readdirAsPseudoDirectory(
+    path.join(rootPath),
+    undefined,
+    {
+      ignore: ["node_modules", ".git"]
+    }
+  );
+  const findNodeFromRoot = pathFromRoot => root.findNodeFromThis(pathFromRoot);
+
   watcher.on("all", (event, p, stats) => {
     const pathFromRoot = path.relative(rootPath, p);
     const splittedPath = path.join(pathFromRoot).split("/");
-    const parentPath = splittedPath.slice(0, -1) || null;
-    const node = findNode(splittedPath, rootNode);
+    const parentPath = path.join(...splittedPath.slice(0, -1)) || null;
+    const thisNodeRule = findNodeRule(pathFromRoot, rootNodeRule);
     if (event === "add") {
-      console.log("add", splittedPath);
-      console.log("parent", splittedPath.slice(0, -1) || null);
-      const parent: DirNodeRule<{}> = findNode(
-        parentPath,
-        rootNode
-      ) as DirNodeRule;
-
-      if (typeof node === "function") {
-        const state: State<{}, any> = {};
-        console.log(generate(node(state)));
+      if (typeof thisNodeRule === "function") {
+        const thisNode = findNodeFromRoot(pathFromRoot) as PseudoFile;
+        const parentDirNode = findNodeFromRoot(parentPath) as PseudoDirectory;
+        fs.writeFileSync(
+          path.join(rootPath, pathFromRoot),
+          generate(thisNodeRule(parentDirNode.state)).code
+        );
       }
     }
   });
