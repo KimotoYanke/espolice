@@ -20,8 +20,8 @@ export class DirNodeRule<Option = {}> {
   otherFileNode?: FileNodeRule;
   otherDirNode?: DirNodeRule;
 
-  otherDirsMoutedName: string = "otherDirs";
-  otherFilesMoutedName: string = "otherFiles";
+  otherDirsMountedName: string = "otherDirs";
+  otherFilesMountedName: string = "otherFiles";
   otherChildrenDirs(
     f: DirNodeRule | (() => DirNodeRule),
     mountedName?: string,
@@ -31,7 +31,7 @@ export class DirNodeRule<Option = {}> {
       f = f();
     }
     if (mountedName) {
-      this.otherDirsMoutedName = mountedName;
+      this.otherDirsMountedName = mountedName;
     }
     this.otherDirNode = f;
     return this;
@@ -42,7 +42,7 @@ export class DirNodeRule<Option = {}> {
     opts?: ChildrenOption<FileNodeRule>
   ): DirNodeRule<Option> {
     if (mountedName) {
-      this.otherFilesMoutedName = mountedName;
+      this.otherFilesMountedName = mountedName;
     }
     this.otherFileNode = f;
     return this;
