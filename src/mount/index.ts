@@ -1,11 +1,13 @@
 import * as chokidar from "chokidar";
-import { DirNodeRule } from "../rule/dir";
+import { DirNodeRule, isDirNodeRule } from "../rule/dir";
 import * as path from "path";
 import * as t from "@babel/types";
 import * as fs from "fs";
 import { NodeRule } from "../rule";
 import { State } from "./state";
-import generate from "@babel/generator";
+import { getDiff } from "./diff";
+import { parse } from "@babel/parser";
+import { isFileNodeRule } from "../rule/file";
 
 type PseudoNode = PseudoDirectory | PseudoFile;
 
@@ -61,13 +63,20 @@ class PseudoDirectory<StateDataType = {}> {
   }
 }
 
-class PseudoFile {
+class PseudoFile<StateDataType = {}> {
   type: "file";
   pathFromRoot: string;
   get name(): string {
     return path.basename(this.pathFromRoot);
   }
-
+  parent: PseudoDirectory | null;
+  stateData: StateDataType;
+  get state(): State<StateDataType, {}> {
+    return {
+      parent: this.parent ? this.parent.state : null,
+      ...this.stateData
+    };
+  }
   ast: t.File;
   constructor(pathFromRoot: string) {
     this.type = "file";
@@ -101,6 +110,7 @@ const readdirAsPseudoDirectory = (
         }
 
         const result: PseudoFile = new PseudoFile(pathFromRoot);
+        result.parent = getParent ? getParent() : undefined;
         return result;
       }
     )
@@ -171,15 +181,29 @@ export const mount = (
     const splittedPath = path.join(pathFromRoot).split("/");
     const parentPath = path.join(...splittedPath.slice(0, -1)) || null;
     const thisNodeRule = findNodeRule(pathFromRoot, rootNodeRule);
-    if (event === "add") {
-      if (typeof thisNodeRule === "function") {
-        const thisNode = findNodeFromRoot(pathFromRoot) as PseudoFile;
-        const parentDirNode = findNodeFromRoot(parentPath) as PseudoDirectory;
-        fs.writeFileSync(
-          path.join(rootPath, pathFromRoot),
-          generate(thisNodeRule(parentDirNode.state)).code
-        );
-      }
+    switch (event) {
+      case "add":
+      case "change":
+        const code = fs
+          .readFileSync(path.join(rootPath, pathFromRoot))
+          .toString();
+        const ast = parse(code).program;
+        if (isFileNodeRule(thisNodeRule)) {
+          const thisNode = findNodeFromRoot(pathFromRoot) as PseudoFile;
+          const parentDirNode = findNodeFromRoot(parentPath) as PseudoDirectory;
+
+          const newAst = thisNodeRule(thisNode.state) as t.Program;
+          console.log(getDiff(newAst, ast));
+          /*fs.writeFileSync(
+            path.join(rootPath, pathFromRoot),
+          );*/
+        }
+        break;
+      case "addDir":
+        if (isDirNodeRule(thisNodeRule)) {
+          thisNodeRule.childDirNodes;
+        }
+        break;
     }
   });
 };

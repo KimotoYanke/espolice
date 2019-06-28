@@ -1,4 +1,4 @@
-import { FileNodeRule } from "./file";
+import { FileNodeRule, isFileNodeRule } from "./file";
 import { NodeRule } from ".";
 
 type ChildrenOption<T> = {
@@ -48,6 +48,10 @@ export class DirNodeRule<Option = {}> {
     return this;
   }
 }
+
+export const isDirNodeRule = (rule: NodeRule): rule is DirNodeRule => {
+  return !isFileNodeRule(rule);
+};
 
 export const dir = (): DirNodeRule => {
   return new DirNodeRule();
