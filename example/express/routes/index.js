@@ -1,2 +1,2 @@
 a;
-hello(parent.a);
+hello(hello);
