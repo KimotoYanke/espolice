@@ -1,8 +1,10 @@
 import template from "@babel/template";
-import { patternMatch } from "../src/pattern-matcher/pattern-matcher";
+import {
+  patternMatch,
+  GroupResult
+} from "../src/pattern-matcher/pattern-matcher";
 import "jest-extended";
 import { isGroup } from "../src/pattern-matcher/is-group";
-import { isNode } from "../src/pattern-matcher/is-node";
 import { nodePurify } from "../src/pattern-matcher/node-purify";
 import * as t from "@babel/types";
 
@@ -51,6 +53,32 @@ describe("pattern-match", () => {
     }
     expect(result).toStrictEqual({
       A: "aa".split(""),
+      B: "bb".split("")
+    });
+  });
+
+  test("string-single", () => {
+    const opts = {
+      isGroup: (str: string): GroupResult | false =>
+        str === "A"
+          ? { type: "SINGLE", as: "A" }
+          : str === "B"
+          ? { type: "MULTIPLE", as: "B" }
+          : false
+    };
+    const result1 = patternMatch(
+      "AingBing".split(""),
+      "aaingbbing".split(""),
+      opts
+    );
+    expect(result1).toBeFalse();
+    const result2 = patternMatch(
+      "AAingBing".split(""),
+      "agingbbing".split(""),
+      opts
+    );
+    expect(result2).toStrictEqual({
+      A: "g",
       B: "bb".split("")
     });
   });

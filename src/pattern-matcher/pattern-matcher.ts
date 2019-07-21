@@ -18,9 +18,8 @@ type MatchedList = {
 };
 
 export type ObjectIsFunction = (obj: any) => boolean;
-export type IsGroupFunction = (
-  obj: any
-) => { type: "MULTIPLE" | "SINGLE"; as: string } | false;
+export type GroupResult = { type: "MULTIPLE" | "SINGLE"; as: string };
+export type IsGroupFunction = (obj: any) => GroupResult | false;
 const defaultIsAtomicFunction: ObjectIsFunction = () => true;
 const defaultIsGroupFunction: IsGroupFunction = () => false;
 
@@ -64,22 +63,46 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
 
       // tmplが[0,*,2,3]で現在"*"の時、[2,3]をhappyEndとし、[0,4,5,6,2,3]からtailして行って[2,3]と一致するまで待つ
       let matched: MatchedList | false;
+      switch (key.type) {
+        case "MULTIPLE":
+          while (
+            (matched = patternMatch(happyEnd, obj.slice(j), opts)) === false
+          ) {
+            if (opts.debug) console.log("obj.slice(j):", obj.slice(j));
+            if (opts.debug) console.log("matched:", matched, happyEnd);
 
-      while ((matched = patternMatch(happyEnd, obj.slice(j), opts)) === false) {
-        if (opts.debug) console.log("obj.slice(j):", obj.slice(j));
-        if (opts.debug) console.log("matched:", matched, happyEnd);
+            groups[key.as].push(obj[j]);
+            j++;
+            if (obj.slice(j).length === 0) {
+              if (opts.debug) console.log("tail(obj).length == 0");
 
-        groups[key.as].push(obj[j]);
-        j++;
-        if (obj.slice(j).length === 0) {
-          if (opts.debug) console.log("tail(obj).length == 0");
-
-          return false;
-        }
+              return false;
+            }
+          }
+          j--;
+          if (opts.debug)
+            console.log(
+              "matched:",
+              i,
+              tmpl[i],
+              j,
+              obj[j],
+              matched,
+              groups[key.as]
+            );
+          break;
+        case "SINGLE":
+          groups[key.as] = obj[j];
+          j++;
+          matched = patternMatch(happyEnd, obj.slice(j), opts);
+          if (matched) {
+            groups = { ...groups, ...matched };
+          } else {
+            return false;
+          }
+          j--;
+          break;
       }
-      j--;
-      if (opts.debug)
-        console.log("matched:", i, tmpl[i], j, obj[j], matched, groups[key.as]);
     } else if (result === false) {
       return false;
     }
