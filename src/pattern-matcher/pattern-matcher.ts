@@ -18,7 +18,9 @@ type MatchedList = {
 };
 
 export type ObjectIsFunction = (obj: any) => boolean;
-export type IsGroupFunction = (obj: any) => string | false;
+export type IsGroupFunction = (
+  obj: any
+) => { type: "MULTIPLE" | "SINGLE"; as: string } | false;
 const defaultIsAtomicFunction: ObjectIsFunction = () => true;
 const defaultIsGroupFunction: IsGroupFunction = () => false;
 
@@ -54,10 +56,10 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
       const happyEnd: T[] = tmpl.slice(i + 1);
       if (opts.debug) console.log("happyEnd", happyEnd);
       if (happyEnd.length === 0) {
-        groups[key] = obj.slice(j);
+        groups[key.as] = obj.slice(j);
         continue;
       } else {
-        groups[key] = [];
+        groups[key.as] = [];
       }
 
       // tmplが[0,*,2,3]で現在"*"の時、[2,3]をhappyEndとし、[0,4,5,6,2,3]からtailして行って[2,3]と一致するまで待つ
@@ -67,7 +69,7 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
         if (opts.debug) console.log("obj.slice(j):", obj.slice(j));
         if (opts.debug) console.log("matched:", matched, happyEnd);
 
-        groups[key].push(obj[j]);
+        groups[key.as].push(obj[j]);
         j++;
         if (obj.slice(j).length === 0) {
           if (opts.debug) console.log("tail(obj).length == 0");
@@ -77,7 +79,7 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
       }
       j--;
       if (opts.debug)
-        console.log("matched:", i, tmpl[i], j, obj[j], matched, groups[key]);
+        console.log("matched:", i, tmpl[i], j, obj[j], matched, groups[key.as]);
     } else if (result === false) {
       return false;
     }
@@ -90,9 +92,9 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
   return groups;
 };
 
-const patternMatchObject = <T extends IObject, O extends IObject>(
-  tmpl: T,
-  obj: O,
+const patternMatchObject = <T, O>(
+  tmpl: IObject,
+  obj: IObject,
   opts: Partial<Options> = defaultOptions
 ): MatchedList | false => {
   const tmplKeys = Object.keys(tmpl);
@@ -172,7 +174,7 @@ export const patternMatch = <T, O>(
 
     if (key) {
       if (opts.debug) console.log(`grouped:`, objU, `as`, key);
-      return { [key]: objU };
+      return { [key.as]: objU };
     }
   }
 
@@ -188,7 +190,7 @@ export const patternMatch = <T, O>(
     objU !== null
   ) {
     if (opts.debug) console.log("type:object");
-    return patternMatchObject(tmpl, obj, opts);
+    return patternMatchObject(tmplU, objU, opts);
   }
 
   if (opts.debug) console.log("type:isEqual", "returns", isEqual(tmpl, obj));

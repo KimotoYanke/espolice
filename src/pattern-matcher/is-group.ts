@@ -35,5 +35,5 @@ export const isGroup: IsGroupFunction = (obj: any) => {
   if (result.cmd !== "any") {
     return false;
   }
-  return result.key;
+  return { type: "MULTIPLE", as: result.key };
 };

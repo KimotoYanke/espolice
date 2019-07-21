@@ -9,7 +9,12 @@ import * as t from "@babel/types";
 describe("pattern-match", () => {
   test("string", () => {
     const result = patternMatch("ingBing".split(""), "ingbbing".split(""), {
-      isGroup: str => (str === "A" ? "A" : str === "B" ? "B" : false)
+      isGroup: str =>
+        str === "A"
+          ? { type: "MULTIPLE", as: "A" }
+          : str === "B"
+          ? { type: "MULTIPLE", as: "B" }
+          : false
     });
     if (typeof result === "boolean") {
       expect(result).not.toBeBoolean();
@@ -19,7 +24,7 @@ describe("pattern-match", () => {
   });
   test("string-start", () => {
     const result = patternMatch("*ing".split(""), "straaingaaing".split(""), {
-      isGroup: str => (str === "*" ? "A" : false)
+      isGroup: str => (str === "*" ? { type: "MULTIPLE", as: "A" } : false)
     });
     if (typeof result === "boolean") {
       expect(result).not.toBeBoolean();
@@ -32,7 +37,12 @@ describe("pattern-match", () => {
       "aAingBing".split(""),
       "aaaingbbing".split(""),
       {
-        isGroup: str => (str === "A" ? "A" : str === "B" ? "B" : false)
+        isGroup: str =>
+          str === "A"
+            ? { type: "MULTIPLE", as: "A" }
+            : str === "B"
+            ? { type: "MULTIPLE", as: "B" }
+            : false
       }
     );
     if (typeof result === "boolean") {
@@ -50,15 +60,14 @@ describe("pattern-match", () => {
       { a: "a", b: "b", any: "ANY" },
       { a: "a", b: "b", any: "placedString" },
       {
-        debug: true,
-        isGroup: str => (str === "ANY" ? "ANY" : false)
+        isGroup: str =>
+          str === "ANY" ? { type: "MULTIPLE", as: "ANY" } : false
       }
     );
     if (typeof result === "boolean") {
       expect(result).not.toBeBoolean();
       return;
     }
-    console.log(result);
     expect(result).toStrictEqual({
       ANY: "placedString"
     });
