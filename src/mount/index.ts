@@ -5,7 +5,6 @@ import * as t from "@babel/types";
 import * as fs from "fs";
 import { NodeRule } from "../rule";
 import { State } from "./state";
-import { getDiff } from "./diff";
 import { parse } from "@babel/parser";
 import { isFileNodeRule } from "../rule/file";
 
@@ -206,7 +205,6 @@ export const mount = (
           ) as PseudoDirectory;
 
           const newAst = thisNodeRule(thisNode.state) as t.Program;
-          console.log(getDiff(newAst, ast));
           /*fs.writeFileSync(
             path.join(rootPath, pathFromRoot),
           );*/
