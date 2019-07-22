@@ -11,7 +11,7 @@ type MatchedList = {
 };
 
 export type ObjectIsFunction = (obj: any) => boolean;
-export type GroupResult = { type: "MULTIPLE" | "SINGLE"; as: string };
+export type GroupResult = { type: "MULTIPLE" | "SINGLE" | "ANY"; as: string };
 export type IsGroupFunction = (obj: any) => GroupResult | false;
 const defaultIsAtomicFunction: ObjectIsFunction = () => true;
 const defaultIsGroupFunction: IsGroupFunction = () => false;
@@ -59,6 +59,7 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
       let matched: MatchedList | false;
       switch (key.type) {
         case "MULTIPLE":
+        case "ANY":
           while (
             (matched = patternMatch(happyEnd, obj.slice(j), opts)) === false
           ) {
@@ -200,7 +201,14 @@ export const patternMatch = (
 
     if (key) {
       if (opts.debug) console.log(`grouped:`, objU, `as`, key);
-      return { [key.as]: objU };
+
+      switch (key.type) {
+        case "SINGLE":
+        case "ANY":
+          return { [key.as]: objU };
+        default:
+          return false;
+      }
     }
   }
 

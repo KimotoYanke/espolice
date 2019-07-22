@@ -1,5 +1,5 @@
 import * as t from "@babel/types";
-import { IsGroupFunction } from "./pattern-matcher";
+import { IsGroupFunction, GroupResult } from "./pattern-matcher";
 
 const parseGroupString = (
   str: string
@@ -12,7 +12,7 @@ const parseGroupString = (
   return { key, cmd };
 };
 
-export const isGroup: IsGroupFunction = (obj: any) => {
+export const isGroup: IsGroupFunction = (obj: any): false | GroupResult => {
   if (Object.keys(obj).length === 0) {
     return false;
   }
@@ -32,8 +32,13 @@ export const isGroup: IsGroupFunction = (obj: any) => {
   if (!result) {
     return false;
   }
-  if (result.cmd !== "any") {
-    return false;
+  switch (result.cmd) {
+    case "any":
+      return { type: "ANY", as: result.key || "any" };
+    case "some":
+      return { type: "MULTIPLE", as: result.key || "some" };
+    case "one":
+      return { type: "SINGLE", as: result.key || "one" };
   }
-  return { type: "MULTIPLE", as: result.key };
+  return false;
 };

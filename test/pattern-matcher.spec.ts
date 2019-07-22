@@ -25,6 +25,21 @@ describe("pattern-match", () => {
     }
     expect(result).toEqual({ B: "bb".split("") });
   });
+  test("string-empty", () => {
+    const result = patternMatch("ingBing".split(""), "inging".split(""), {
+      isGroup: str =>
+        str === "A"
+          ? { type: "MULTIPLE", as: "A" }
+          : str === "B"
+          ? { type: "MULTIPLE", as: "B" }
+          : false
+    });
+    if (typeof result === "boolean") {
+      expect(result).not.toBeBoolean();
+      return;
+    }
+    expect(result).toEqual({ B: "".split("") });
+  });
   test("string-start", () => {
     const result = patternMatch("*ing".split(""), "straaingaaing".split(""), {
       isGroup: str => (str === "*" ? { type: "MULTIPLE", as: "A" } : false)
@@ -52,7 +67,7 @@ describe("pattern-match", () => {
       {
         isGroup: str =>
           str === "A"
-            ? { type: "MULTIPLE", as: "A" }
+            ? { type: "ANY", as: "A" }
             : str === "B"
             ? { type: "MULTIPLE", as: "B" }
             : false
@@ -99,8 +114,7 @@ describe("pattern-match", () => {
       { a: "a", b: "b", any: "ANY" },
       { a: "a", b: "b", any: "placedString" },
       {
-        isGroup: str =>
-          str === "ANY" ? { type: "MULTIPLE", as: "ANY" } : false
+        isGroup: str => (str === "ANY" ? { type: "ANY", as: "ANY" } : false)
       }
     );
     if (typeof result === "boolean") {
@@ -193,5 +207,58 @@ describe("pattern-match", () => {
         nodePurify(template.statement`console.log("piyopiyo")`())
       ]
     });
+  });
+
+  test("node-empty", () => {
+    const tmplAst = nodePurify(
+      template.program`
+      export default ()=>{
+        "placement = @any"
+      } 
+    `()
+    );
+
+    const objAst = nodePurify(
+      template.program`
+      export default () => {
+      } 
+    `()
+    );
+
+    const result = patternMatch(tmplAst, objAst, {
+      isGroup: isGroup,
+      isNode: isNode
+    });
+    if (typeof result === "boolean") {
+      expect(result).not.toBeBoolean();
+      return;
+    }
+    expect(result).toEqual({
+      placement: []
+    });
+  });
+
+  test("node-unmatched", () => {
+    const tmplAst = nodePurify(
+      template.program`
+      export default ()=>{
+        "placement = @any"
+      } 
+    `()
+    );
+
+    const objAst = nodePurify(
+      template.program`
+      console.log(2)
+      export default () => {
+      } 
+    `()
+    );
+
+    const result = patternMatch(tmplAst, objAst, {
+      isGroup: isGroup,
+      isNode: isNode
+    });
+    expect(result).toBeFalse();
   });
 });
