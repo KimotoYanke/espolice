@@ -7,6 +7,7 @@ import "jest-extended";
 import { isGroup } from "../src/pattern-matcher/is-group";
 import { nodePurify } from "../src/pattern-matcher/node-purify";
 import * as t from "@babel/types";
+import { isNode } from "../src/pattern-matcher/is-node";
 
 describe("pattern-match", () => {
   test("string", () => {
@@ -33,6 +34,16 @@ describe("pattern-match", () => {
       return;
     }
     expect(result).toEqual({ A: "straaingaa".split("") });
+  });
+  test("string-end", () => {
+    const result = patternMatch("str*".split(""), "string".split(""), {
+      isGroup: str => (str === "*" ? { type: "MULTIPLE", as: "A" } : false)
+    });
+    if (typeof result === "boolean") {
+      expect(result).not.toBeBoolean();
+      return;
+    }
+    expect(result).toEqual({ A: "ing".split("") });
   });
   test("string-multi", () => {
     const result = patternMatch(
@@ -120,20 +131,22 @@ describe("pattern-match", () => {
     expect(tmplAst.directives).toHaveLength(0);
   });
 
-  /*test("node", () => {
-    const tmplAst = [
-      {
-        type: "ExpressionStatement",
-        expression: { type: "StringLiteral", value: "placement = @any" }
-      }
-    ];
+  test("node", () => {
+    const tmplAst = nodePurify(
+      template.program`
+      export default ()=>{
+        "placement = @any"
+      } 
+    `()
+    );
 
-    const objAst = [
-      {
-        type: "ExpressionStatement",
-        expression: { type: "StringLiteral", value: "placedString" }
-      }
-    ];
+    const objAst = nodePurify(
+      template.program`
+      export default () => {
+        console.log("hogehoge")
+      } 
+    `()
+    );
 
     const result = patternMatch(tmplAst, objAst, {
       isGroup: isGroup,
@@ -143,13 +156,42 @@ describe("pattern-match", () => {
       expect(result).not.toBeBoolean();
       return;
     }
-    expect(result.matched).toEqual({
+    expect(result).toEqual({
+      placement: [nodePurify(template.statement`console.log("hogehoge")`())]
+    });
+  });
+
+  test("node-multiple", () => {
+    const tmplAst = nodePurify(
+      template.program`
+      export default ()=>{
+        "placement = @any"
+      } 
+    `()
+    );
+
+    const objAst = nodePurify(
+      template.program`
+      export default () => {
+        console.log("hogehoge")
+        console.log("piyopiyo")
+      } 
+    `()
+    );
+
+    const result = patternMatch(tmplAst, objAst, {
+      isGroup: isGroup,
+      isNode: isNode
+    });
+    if (typeof result === "boolean") {
+      expect(result).not.toBeBoolean();
+      return;
+    }
+    expect(result).toEqual({
       placement: [
-        {
-          type: "ExpressionStatement",
-          expression: { type: "StringLiteral", value: "placedString" }
-        }
+        nodePurify(template.statement`console.log("hogehoge")`()),
+        nodePurify(template.statement`console.log("piyopiyo")`())
       ]
     });
-  });*/
+  });
 });

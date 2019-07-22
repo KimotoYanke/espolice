@@ -1,11 +1,4 @@
-import { isEqual, memoize } from "lodash";
-import * as t from "@babel/types";
-import { isGroup } from "./is-group";
-const sortObject = (o: IObject) => {
-  const keys = Object.keys(o);
-  keys.sort();
-  return keys.map(k => o[k]);
-};
+import { isEqual } from "lodash";
 
 interface IObject {
   [key: string]: any;
@@ -55,8 +48,9 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
       const happyEnd: T[] = tmpl.slice(i + 1);
       if (opts.debug) console.log("happyEnd", happyEnd);
       if (happyEnd.length === 0) {
+        if (opts.debug) console.log("obj.slice(j) =", obj.slice(j));
         groups[key.as] = obj.slice(j);
-        continue;
+        break;
       } else {
         groups[key.as] = [];
       }
@@ -79,6 +73,8 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
               return false;
             }
           }
+          groups = { ...groups, ...matched };
+          if (opts.debug) console.log({ groups });
           j--;
           if (opts.debug)
             console.log(
@@ -95,17 +91,20 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
           groups[key.as] = obj[j];
           j++;
           matched = patternMatch(happyEnd, obj.slice(j), opts);
-          if (matched) {
-            groups = { ...groups, ...matched };
-          } else {
+          if (matched === false) {
             return false;
           }
+          groups = { ...groups, ...matched };
+          if (opts.debug) console.log({ groups });
           j--;
           break;
       }
     } else if (result === false) {
       return false;
+    } else {
+      groups = { ...groups, ...result };
     }
+
     // ここにpatternMatchからのデータがある場合の処理を書く
     if (opts.debug) console.log({ groups });
 
@@ -120,6 +119,7 @@ const patternMatchObject = <T, O>(
   obj: IObject,
   opts: Partial<Options> = defaultOptions
 ): MatchedList | false => {
+  if (opts.debug) console.log("patternMatchObject(", tmpl, ",", obj, ")");
   const tmplKeys = Object.keys(tmpl);
   const objKeys = Object.keys(obj);
 
@@ -128,12 +128,14 @@ const patternMatchObject = <T, O>(
   if (tmplKeys.length !== objKeys.length) {
     if (opts.debug)
       console.log(
-        "length don't match:",
-        tmplKeys.length,
-        "(tmpl)",
-        "=/=",
-        objKeys.length,
-        "(obj)"
+        "length don't match:" +
+          tmplKeys.length +
+          "(tmpl)" +
+          "=/=" +
+          objKeys.length +
+          "(obj)",
+        tmplKeys,
+        objKeys
       );
     return false;
   }
@@ -165,6 +167,7 @@ const patternMatchObject = <T, O>(
 
     groups = { ...groups, ...matched };
   }
+  if (opts.debug) console.log({ groups });
 
   return groups;
 };
@@ -176,9 +179,9 @@ const patternMatchObject = <T, O>(
  * @param opts  オプション
  * @returns マッチに失敗した時、falseを返す
  */
-export const patternMatch = <T, O>(
-  tmpl: T,
-  obj: O,
+export const patternMatch = (
+  tmpl: any,
+  obj: any,
   opts: Partial<Options> = defaultOptions
 ): MatchedList | false => {
   const isNode = opts.isNode || defaultOptions.isNode;

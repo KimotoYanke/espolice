@@ -9,11 +9,17 @@ export const nodePurify = (node: any): any => {
     delete node.start;
     delete node.end;
     if (t.isBlockStatement(node)) {
-      node.body = node.directives.map(d =>
-        t.expressionStatement(t.stringLiteral(d.value.value))
-      );
+      node.body = [
+        ...node.directives.map(d =>
+          t.expressionStatement(t.stringLiteral(d.value.value))
+        ),
+        ...node.body
+      ];
       node.directives = [];
     }
+  }
+  if (node["extra"]) {
+    delete node["extra"];
   }
   if (node instanceof Array) {
     return node.map(n => nodePurify(n));
