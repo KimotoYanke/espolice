@@ -282,7 +282,6 @@ describe("pattern-match", () => {
     );
 
     const result = patternMatch(tmplAst, objAst, {
-      debug: true,
       isGroup: isGroup,
       isNode: isNode,
       isDisorderly: ast => t.isObjectExpression(ast) && "properties"
@@ -290,6 +289,41 @@ describe("pattern-match", () => {
     expect(result).toEqual({
       one: t.stringLiteral("one"),
       two: t.stringLiteral("two")
+    });
+  });
+
+  test("node-object-rest", () => {
+    const tmplAst = nodePurify(
+      template.program`
+      export default {
+        name:"@one",
+        data:"two=@one",
+        ..."rest=@any"
+      } 
+    `()
+    );
+
+    const objAst = nodePurify(
+      template.program`
+      export default {
+        data:"two",
+        name:"one",
+        otherObject1: "other",
+      }
+    `()
+    );
+
+    const result = patternMatch(tmplAst, objAst, {
+      isGroup: isGroup,
+      isNode: isNode,
+      isDisorderly: ast => t.isObjectExpression(ast) && "properties"
+    });
+    expect(result).toEqual({
+      one: t.stringLiteral("one"),
+      two: t.stringLiteral("two"),
+      rest: [
+        t.objectProperty(t.identifier("otherObject1"), t.stringLiteral("other"))
+      ]
     });
   });
 });

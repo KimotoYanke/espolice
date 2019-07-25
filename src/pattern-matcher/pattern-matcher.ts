@@ -129,9 +129,10 @@ const patternMatchDisorderlyArray = <T extends IObject, O extends IObject>(
   const isGroup = opts.isGroup || defaultOptions.isGroup;
 
   let groups: MatchedList = {};
-  const groupedTmpl = tmpl.filter(t => isGroup(t) !== false);
-  if (groupedTmpl.length === 0) {
-    if (opts.debug) console.log("groupedTmpl(", groupedTmpl, ")");
+  const groupingTmpls = tmpl.filter(t => isGroup(t) !== false);
+  const notGroupingTmpls = tmpl.filter(t => isGroup(t) === false);
+  if (groupingTmpls.length === 0) {
+    if (opts.debug) console.log("groupedTmpl(", groupingTmpls, ")");
     if (tmpl.length !== obj.length) {
       if (opts.debug)
         console.log(
@@ -172,6 +173,50 @@ const patternMatchDisorderlyArray = <T extends IObject, O extends IObject>(
 
       objCache = newObjCache;
     }
+  } else {
+    const groupingTmpl = groupingTmpls[groupingTmpls.length - 1];
+
+    const restGroup = isGroup(groupingTmpl);
+
+    if (!restGroup) {
+      return false;
+    }
+
+    if (!(restGroup.type === "ANY" || restGroup.type === "MULTIPLE")) {
+      return false;
+    }
+
+    let objCache = [...obj];
+    for (const i in notGroupingTmpls) {
+      const newObjCache = objCache.filter(o => {
+        const matched = patternMatch(notGroupingTmpls[i], o, opts);
+        if (matched) {
+          groups = { ...groups, ...matched };
+          return false;
+        }
+        return true;
+      });
+      if (opts.debug)
+        console.log("disorderly array matching loop", {
+          objCache,
+          newObjCache,
+          "tmpl[i]": tmpl[i]
+        });
+
+      if (newObjCache.length === objCache.length) {
+        if (opts.debug)
+          console.log("newObjCache doesn't decrease", {
+            objCache: JSON.stringify(objCache),
+            newObjCache: JSON.stringify(newObjCache),
+            "tmpl[i]": tmpl[i]
+          });
+        return false;
+      }
+
+      objCache = newObjCache;
+    }
+
+    groups[restGroup.as] = objCache;
   }
 
   return groups;
