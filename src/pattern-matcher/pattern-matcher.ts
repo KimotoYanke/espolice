@@ -13,17 +13,21 @@ type MatchedList = {
 export type ObjectIsFunction = (obj: any) => boolean;
 export type GroupResult = { type: "MULTIPLE" | "SINGLE" | "ANY"; as: string };
 export type IsGroupFunction = (obj: any) => GroupResult | false;
+export type ObjectIsDisorderlyFunction = (obj: object) => false | string;
 const defaultIsAtomicFunction: ObjectIsFunction = () => true;
 const defaultIsGroupFunction: IsGroupFunction = () => false;
+const defaultIsDisorderlyFunction: ObjectIsDisorderlyFunction = () => false;
 
 interface Options {
   isNode: ObjectIsFunction;
   isGroup: IsGroupFunction;
+  isDisorderly: ObjectIsDisorderlyFunction;
   debug: boolean;
 }
 const defaultOptions: Options = {
   isNode: defaultIsAtomicFunction,
   isGroup: defaultIsGroupFunction,
+  isDisorderly: defaultIsDisorderlyFunction,
   debug: false
 };
 
@@ -115,14 +119,76 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
   return groups;
 };
 
+const patternMatchDisorderlyArray = <T extends IObject, O extends IObject>(
+  tmpl: T[],
+  obj: O[],
+  opts: Partial<Options> = defaultOptions
+): MatchedList | false => {
+  if (opts.debug)
+    console.log("patternMatchDisorderlyArray(", tmpl, ",", obj, ")");
+  const isGroup = opts.isGroup || defaultOptions.isGroup;
+
+  let groups: MatchedList = {};
+  const groupedTmpl = tmpl.filter(t => isGroup(t) !== false);
+  if (groupedTmpl.length === 0) {
+    if (opts.debug) console.log("groupedTmpl(", groupedTmpl, ")");
+    if (tmpl.length !== obj.length) {
+      if (opts.debug)
+        console.log(
+          "tmpl.length = ",
+          tmpl.length,
+          " =/= obj.length = ",
+          obj.length
+        );
+      return false;
+    }
+
+    let objCache = [...obj];
+    for (const i in tmpl) {
+      const newObjCache = objCache.filter(o => {
+        const matched = patternMatch(tmpl[i], o, opts);
+        if (matched) {
+          groups = { ...groups, ...matched };
+          return false;
+        }
+        return true;
+      });
+      if (opts.debug)
+        console.log("disorderly array matching loop", {
+          objCache,
+          newObjCache,
+          "tmpl[i]": tmpl[i]
+        });
+
+      if (newObjCache.length === objCache.length) {
+        if (opts.debug)
+          console.log("newObjCache doesn't decrease", {
+            objCache: JSON.stringify(objCache),
+            newObjCache: JSON.stringify(newObjCache),
+            "tmpl[i]": tmpl[i]
+          });
+        return false;
+      }
+
+      objCache = newObjCache;
+    }
+  }
+
+  return groups;
+};
+
 const patternMatchObject = <T, O>(
   tmpl: IObject,
   obj: IObject,
   opts: Partial<Options> = defaultOptions
 ): MatchedList | false => {
   if (opts.debug) console.log("patternMatchObject(", tmpl, ",", obj, ")");
+  const isDisorderly = opts.isDisorderly || defaultOptions.isDisorderly;
+
   const tmplKeys = Object.keys(tmpl);
   const objKeys = Object.keys(obj);
+
+  const disorderlyName = isDisorderly(tmpl);
 
   let groups: MatchedList = {};
 
@@ -160,7 +226,10 @@ const patternMatchObject = <T, O>(
       return false;
     }
 
-    const matched = patternMatch(tmpl[tmplKey], obj[tmplKey], opts);
+    const matched =
+      disorderlyName === tmplKey
+        ? patternMatchDisorderlyArray(tmpl[tmplKey], obj[tmplKey], opts)
+        : patternMatch(tmpl[tmplKey], obj[tmplKey], opts);
 
     if (matched === false) {
       return false;
@@ -187,6 +256,7 @@ export const patternMatch = (
 ): MatchedList | false => {
   const isNode = opts.isNode || defaultOptions.isNode;
   const isGroup = opts.isGroup || defaultOptions.isGroup;
+  const isDisorderly = opts.isDisorderly || defaultOptions.isDisorderly;
   if (opts.debug) console.log(`patternMatch(`, tmpl, `,`, obj, `)`);
 
   if (typeof tmpl !== typeof obj) {

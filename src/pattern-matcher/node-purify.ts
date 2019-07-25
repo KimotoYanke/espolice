@@ -17,6 +17,9 @@ export const nodePurify = (node: any): any => {
       ];
       node.directives = [];
     }
+    if (t.isObjectProperty(node)) {
+      node.decorators = node.decorators || null;
+    }
   }
   if (node["extra"]) {
     delete node["extra"];

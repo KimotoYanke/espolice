@@ -21,6 +21,10 @@ export const isGroup: IsGroupFunction = (obj: any): false | GroupResult => {
     return isGroup(obj.expression);
   }
 
+  if (t.isSpreadElement(obj)) {
+    return isGroup(obj.argument);
+  }
+
   const strLiteral = obj;
   if (!t.isStringLiteral(strLiteral)) {
     return false;

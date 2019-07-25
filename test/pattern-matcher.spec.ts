@@ -261,4 +261,35 @@ describe("pattern-match", () => {
     });
     expect(result).toBeFalse();
   });
+
+  test("node-object", () => {
+    const tmplAst = nodePurify(
+      template.program`
+      export default {
+        name:"@one",
+        data:"two=@one",
+      } 
+    `()
+    );
+
+    const objAst = nodePurify(
+      template.program`
+      export default {
+        data:"two",
+        name:"one",
+      }
+    `()
+    );
+
+    const result = patternMatch(tmplAst, objAst, {
+      debug: true,
+      isGroup: isGroup,
+      isNode: isNode,
+      isDisorderly: ast => t.isObjectExpression(ast) && "properties"
+    });
+    expect(result).toEqual({
+      one: t.stringLiteral("one"),
+      two: t.stringLiteral("two")
+    });
+  });
 });
