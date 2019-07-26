@@ -8,7 +8,7 @@ export const nodePurify = (node: any): any => {
     delete node.loc;
     delete node.start;
     delete node.end;
-    if (t.isBlockStatement(node)) {
+    if (t.isBlockStatement(node) || t.isProgram(node)) {
       node.body = [
         ...node.directives.map(d =>
           t.expressionStatement(t.stringLiteral(d.value.value))
