@@ -1,16 +1,6 @@
-import { dir, DirNodeRule } from "../../src/rule/dir";
-import { FileNodeRule } from "../../src/rule/file";
-import { mount } from "../../src/mount";
-import { transform } from "@babel/core";
+import { DirNodeRule, dir, mount } from "espolice";
+import { Index } from "./templates";
 
-const RouteIndex: FileNodeRule = ({ parent }) => {
-  return transform('hello(hello);"@any"', {});
-};
+const RootDir: DirNodeRule = dir().haveChildFile(Index, "index.js");
 
-const RoutesDir: DirNodeRule = dir()
-  .haveChildFile(RouteIndex, "index.js")
-  .otherChildrenDirs(() => RoutesDir, "routes");
-
-const RootDir: DirNodeRule = dir().haveChildDir(RoutesDir, "routes");
-
-mount({}, RootDir, ".");
+mount({}, RootDir, "./routes");

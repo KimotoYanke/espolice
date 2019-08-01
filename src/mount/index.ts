@@ -2,7 +2,7 @@ import * as chokidar from "chokidar";
 import { DirNodeRule, isDirNodeRule } from "../rule/dir";
 import * as path from "path";
 import * as t from "@babel/types";
-import * as fs from "fs";
+import * as fs from "mz/fs";
 import { NodeRule } from "../rule";
 import { State } from "./state";
 import { parse } from "@babel/parser";
@@ -93,6 +93,7 @@ const readdirAsPseudoDirectory = (
   const notNull = <T>(nullable: T | null): nullable is T => {
     return nullable !== null;
   };
+  console.log(fs.readdirSync("."));
   const nodes = fs
     .readdirSync(p)
     .map(
