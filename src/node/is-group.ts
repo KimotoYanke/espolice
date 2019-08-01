@@ -1,5 +1,9 @@
 import * as t from "@babel/types";
-import { IsGroupFunction, GroupResult } from "./pattern-matcher";
+import {
+  IsGroupFunction,
+  GroupResult
+} from "../pattern-matcher/pattern-matcher";
+import { isNode } from "./is-node";
 
 const parseGroupString = (
   str: string
@@ -15,6 +19,10 @@ const parseGroupString = (
 export const isGroup: IsGroupFunction = (obj: any): false | GroupResult => {
   if (Object.keys(obj).length === 0) {
     return false;
+  }
+
+  if (isNode(obj) && (obj.leadingComments || obj.trailingComments)) {
+    obj.leadingComments;
   }
 
   if (t.isExpressionStatement(obj)) {

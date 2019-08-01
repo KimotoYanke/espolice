@@ -1,10 +1,10 @@
 import { dir, DirNodeRule } from "../../src/rule/dir";
 import { FileNodeRule } from "../../src/rule/file";
 import { mount } from "../../src/mount";
-import { parse } from "@babel/parser";
+import { transform } from "@babel/core";
 
 const RouteIndex: FileNodeRule = ({ parent }) => {
-  return parse('"ANY";hello(/*@requote*/ hello)', { ranges: false }).program;
+  return transform('hello(hello);"@any"', {});
 };
 
 const RoutesDir: DirNodeRule = dir()

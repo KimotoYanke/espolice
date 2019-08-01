@@ -7,6 +7,7 @@ import { NodeRule } from "../rule";
 import { State } from "./state";
 import { parse } from "@babel/parser";
 import { isFileNodeRule } from "../rule/file";
+import { patternMatchAST } from "../pattern-matcher";
 
 type PseudoNode = PseudoDirectory | PseudoFile;
 
@@ -170,8 +171,7 @@ export const mount = (
   options?: Partial<Options>
 ) => {
   const watcher = chokidar.watch(rootPath, {
-    persistent: true,
-    ignoreInitial: true
+    persistent: true
   });
   const root: PseudoDirectory = readdirAsPseudoDirectory(
     path.join(rootPath),
@@ -191,9 +191,11 @@ export const mount = (
     if (!thisNodeRule) {
       return;
     }
+    console.log("all");
     switch (event) {
       case "add":
       case "change":
+        console.log("add or change");
         const code = fs
           .readFileSync(path.join(rootPath, pathFromRoot))
           .toString();
@@ -204,7 +206,8 @@ export const mount = (
             parentPath || ""
           ) as PseudoDirectory;
 
-          const newAst = thisNodeRule(thisNode.state) as t.Program;
+          const tmpl = thisNodeRule(thisNode.state) as t.Program;
+          console.log(patternMatchAST(tmpl, ast));
           /*fs.writeFileSync(
             path.join(rootPath, pathFromRoot),
           );*/

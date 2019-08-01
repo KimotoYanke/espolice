@@ -4,8 +4,7 @@ import {
   GroupResult
 } from "../src/pattern-matcher/pattern-matcher";
 import "jest-extended";
-import { isGroup } from "../src/pattern-matcher/is-group";
-import { nodePurify } from "../src/pattern-matcher/node-purify";
+import { nodePurify } from "../src/node/node-purify";
 import * as t from "@babel/types";
 import { patternMatchAST } from "../src/pattern-matcher";
 
@@ -133,18 +132,6 @@ describe("パターンマッチ", () => {
     expect(result).toStrictEqual({
       ANY: "placedString"
     });
-  });
-
-  test("isGroup関数", () => {
-    const tmplAstT1 = template.statement`"defaultFunc = @any"`();
-    const tmplAstT2 = template.statement`"defaultFunc=@any"`();
-
-    expect(isGroup(tmplAstT1)).not.toBeFalsy();
-    expect(isGroup(tmplAstT2)).not.toBeFalsy();
-
-    const tmplAstF = template.statement`"defaultFunc = any"`();
-
-    expect(isGroup(tmplAstF)).toBeFalsy();
   });
 
   describe("ノードでのテスト", () => {
