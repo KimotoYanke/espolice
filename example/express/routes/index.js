@@ -1,3 +1,3 @@
-hello(hello);
-aiuaa;
-eeee;
+export default () => {
+  console.log("Hello, world");
+};

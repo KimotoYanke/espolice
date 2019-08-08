@@ -8,6 +8,8 @@ import { State } from "./state";
 import { parse } from "@babel/parser";
 import { isFileNodeRule } from "../rule/file";
 import { patternMatchAST } from "../pattern-matcher";
+import { nodePurify } from "../node/node-purify";
+import { isNode } from "../node/is-node";
 
 type PseudoNode = PseudoDirectory | PseudoFile;
 
@@ -93,7 +95,6 @@ const readdirAsPseudoDirectory = (
   const notNull = <T>(nullable: T | null): nullable is T => {
     return nullable !== null;
   };
-  console.log(fs.readdirSync("."));
   const nodes = fs
     .readdirSync(p)
     .map(
@@ -192,7 +193,6 @@ export const mount = (
     if (!thisNodeRule) {
       return;
     }
-    console.log("all");
     switch (event) {
       case "add":
       case "change":
@@ -200,14 +200,29 @@ export const mount = (
         const code = fs
           .readFileSync(path.join(rootPath, pathFromRoot))
           .toString();
-        const ast = parse(code).program;
+        const ast = parse(code, {
+          allowImportExportEverywhere: true
+        }).program;
         if (isFileNodeRule(thisNodeRule)) {
           const thisNode = findNodeFromRoot(pathFromRoot) as PseudoFile;
           const parentDirNode = findNodeFromRoot(
             parentPath || ""
           ) as PseudoDirectory;
 
-          const tmpl = thisNodeRule(thisNode.state) as t.Program;
+          const tmplAst = thisNodeRule(thisNode.state);
+          let tmpl: t.Program = t.program([]);
+          if (t.isProgram(tmplAst)) {
+            tmpl = tmplAst;
+          } else if (t.isExpression(tmplAst)) {
+            tmpl = t.program([t.expressionStatement(tmplAst)]);
+          } else if (t.isStatement(tmplAst)) {
+            tmpl = t.program([tmplAst]);
+          } else if (
+            tmplAst instanceof Array &&
+            tmplAst.every(ast => t.isStatement(ast))
+          ) {
+            tmpl = t.program(tmplAst);
+          }
           console.log(patternMatchAST(tmpl, ast));
           /*fs.writeFileSync(
             path.join(rootPath, pathFromRoot),

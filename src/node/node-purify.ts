@@ -8,6 +8,9 @@ export const nodePurify = (node: any): any => {
     delete node.loc;
     delete node.start;
     delete node.end;
+    delete node.leadingComments;
+    delete node.trailingComments;
+    delete node.innerComments;
     if (t.isBlockStatement(node) || t.isProgram(node)) {
       node.body = [
         ...node.directives.map(d =>
@@ -19,6 +22,9 @@ export const nodePurify = (node: any): any => {
     }
     if (t.isObjectProperty(node)) {
       node.decorators = node.decorators || null;
+    }
+    if (t.isProgram(node)) {
+      delete node.sourceType;
     }
   }
   if (node["extra"]) {

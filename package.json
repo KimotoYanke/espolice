@@ -49,7 +49,8 @@
   },
   "scripts": {
     "test": "jest",
-    "build": "tsc --module commonjs && rollup -c rollup.config.ts"
+    "build": "tsc --module commonjs && rollup -c rollup.config.ts",
+    "run-esp": "cd example/express; yarn run-esp"
   },
   "jest": {
     "moduleFileExtensions": [
