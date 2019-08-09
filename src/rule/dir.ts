@@ -37,7 +37,7 @@ export class DirNodeRule<Option = {}> {
     return this;
   }
   otherChildrenFiles<NewStateKey extends string>(
-    f: FileNodeRule | (() => FileNodeRule),
+    f: FileNodeRule,
     mountedName?: NewStateKey,
     opts?: ChildrenOption<FileNodeRule>
   ): DirNodeRule<Option> {

@@ -1,16 +1,14 @@
-import { FileNodeRule } from "../../../src/rule/file";
-export const Index: FileNodeRule<{ moduleName: string }> = ({
-  moduleName,
-  parent
-}) => {
-  console.log(
-    // @literal
-    moduleName
-  );
-
-  //@ts-ignore
+//@ts-nocheck
+import { FileNodeRule } from "espolice";
+export const Index: FileNodeRule = ({ getState, parent }) => {
+  const state = getState(Index, "moduleName");
   return $quasiquote => {
-    // @ts-ignore
+    console.log(
+      // @literal
+      state.moduleName
+    );
+
+    //@ts-ignore
     export default () => {
       "@any";
     };

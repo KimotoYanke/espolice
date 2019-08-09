@@ -332,5 +332,13 @@ describe("パターンマッチ", () => {
         b: [0, 1, 2, 3].map(n => t.numericLiteral(n))
       });
     });
+
+    test("空", () => {
+      const tmpl = template.program`console.log("a = @any", "b=@any")`();
+      const obj = template.program``();
+
+      const result = patternMatchAST(tmpl, obj);
+      expect(result).toBeFalse();
+    });
   });
 });

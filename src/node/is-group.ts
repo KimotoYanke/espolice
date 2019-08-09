@@ -17,6 +17,9 @@ const parseGroupString = (
 };
 
 export const isGroup: IsGroupFunction = (obj: any): false | GroupResult => {
+  if (!obj) {
+    return false;
+  }
   if (Object.keys(obj).length === 0) {
     return false;
   }

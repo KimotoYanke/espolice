@@ -6,14 +6,14 @@ import * as fs from "mz/fs";
 import { NodeRule } from "../rule";
 import { State } from "./state";
 import { parse } from "@babel/parser";
-import { isFileNodeRule } from "../rule/file";
+import { isFileNodeRule, FileNodeRule } from "../rule/file";
 import { patternMatchAST } from "../pattern-matcher";
-import { nodePurify } from "../node/node-purify";
-import { isNode } from "../node/is-node";
+import generate from "@babel/generator";
+import { toProgram } from "./to-program";
 
 type PseudoNode = PseudoDirectory | PseudoFile;
 
-class PseudoDirectory<StateDataType = {}> {
+export class PseudoDirectory<StateDataType = { [key in string]: any }> {
   type: "dir";
   get name(): string {
     return path.basename(this.pathFromRoot);
@@ -65,18 +65,42 @@ class PseudoDirectory<StateDataType = {}> {
   }
 }
 
-class PseudoFile<StateDataType = {}> {
+export class PseudoFile<StateDataType = { [key in string]: any }> {
   type: "file";
   pathFromRoot: string;
   get name(): string {
     return path.basename(this.pathFromRoot);
   }
   parent: PseudoDirectory | null = null;
-  stateData: StateDataType;
-  get state(): State<StateDataType, {}> {
-    return {
-      parent: this.parent ? this.parent.state : null,
-      ...this.stateData
+  stateData: { [key in string]: any };
+  stateDataUsing: { [key in string]: FileNodeRule } = {};
+  //明日ここらへんを移植する
+  //stateをグローバルに
+  get getState(): <S extends string>(
+    nodeRule: FileNodeRule,
+    ...args: S[]
+  ) => { [key in S]: any } {
+    const getStateData = (key: string): any => {
+      return this.stateData[key];
+    };
+    const setStateData = (key: string, data: any) => {
+      this.stateData[key] = data;
+    };
+    return <S extends string>(nodeRule: FileNodeRule, ...keys: S[]) => {
+      let result: { [key in S]?: any } = {};
+      for (const key of keys) {
+        this.stateDataUsing[key] = nodeRule;
+        result = {
+          ...result,
+          get [key]() {
+            return getStateData(key);
+          },
+          set [key](val: any) {
+            setStateData(key, val);
+          }
+        };
+      }
+      return result as { [key in S]: any };
     };
   }
   ast?: t.File;
@@ -141,7 +165,7 @@ const findNodeRule = (
         return null;
       }
 
-      if (typeof prev === "function") {
+      if (isFileNodeRule(prev)) {
         return null;
       }
 
@@ -173,7 +197,8 @@ export const mount = <RS extends State<any, any>>(
   options?: Partial<Options>
 ) => {
   const watcher = chokidar.watch(rootPath, {
-    persistent: true
+    persistent: true,
+    ignoreInitial: false
   });
   const root: PseudoDirectory = readdirAsPseudoDirectory(
     path.join(rootPath),
@@ -205,28 +230,18 @@ export const mount = <RS extends State<any, any>>(
         }).program;
         if (isFileNodeRule(thisNodeRule)) {
           const thisNode = findNodeFromRoot(pathFromRoot) as PseudoFile;
-          const parentDirNode = findNodeFromRoot(
-            parentPath || ""
-          ) as PseudoDirectory;
+          const getState = thisNode.getState;
+          const parent = findNodeFromRoot(parentPath || "") as PseudoDirectory;
 
-          const tmplAst = thisNodeRule(thisNode.state);
-          let tmpl: t.Program = t.program([]);
-          if (t.isProgram(tmplAst)) {
-            tmpl = tmplAst;
-          } else if (t.isExpression(tmplAst)) {
-            tmpl = t.program([t.expressionStatement(tmplAst)]);
-          } else if (t.isStatement(tmplAst)) {
-            tmpl = t.program([tmplAst]);
-          } else if (
-            tmplAst instanceof Array &&
-            tmplAst.every(ast => t.isStatement(ast))
-          ) {
-            tmpl = t.program(tmplAst);
-          }
-          console.log(patternMatchAST(tmpl, ast));
-          /*fs.writeFileSync(
+          const tmplAst = thisNodeRule({ parent, getState });
+          const tmpl = toProgram(tmplAst);
+          console.log(patternMatchAST(tmpl, ast), tmpl, ast);
+          watcher.unwatch(path.join(rootPath, pathFromRoot));
+          fs.writeFileSync(
             path.join(rootPath, pathFromRoot),
-          );*/
+            generate(tmpl).code
+          );
+          watcher.add(path.join(rootPath, pathFromRoot));
         }
         break;
       case "addDir":

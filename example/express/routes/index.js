@@ -1,3 +1,4 @@
-export default () => {
-  console.log("Hello, world");
-};
+console.log(undefined);
+export default (() => {
+  "@any";
+});
