@@ -166,8 +166,8 @@ type Options = {
   loserMode: boolean;
 };
 
-export const mount = (
-  rootState: State<{}, null>,
+export const mount = <RS extends State<any, any>>(
+  rootState: RS,
   rootNodeRule: DirNodeRule,
   rootPath: string,
   options?: Partial<Options>
