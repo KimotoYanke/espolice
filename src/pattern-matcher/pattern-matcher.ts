@@ -12,22 +12,27 @@ type MatchedList = {
 
 export type ObjectIsFunction = (obj: any) => boolean;
 export type GroupResult = { type: "MULTIPLE" | "SINGLE" | "ANY"; as: string };
-export type IsGroupFunction = (obj: any) => GroupResult | false;
+export type IsGroupFunction = (
+  obj: any,
+  count: number
+) => [GroupResult | false, number];
 export type ObjectIsDisorderlyFunction = (obj: object) => false | string;
 const defaultIsAtomicFunction: ObjectIsFunction = () => true;
-const defaultIsGroupFunction: IsGroupFunction = () => false;
+const defaultIsGroupFunction: IsGroupFunction = (_, n) => [false, n];
 const defaultIsDisorderlyFunction: ObjectIsDisorderlyFunction = () => false;
 
 interface Options {
   isNode: ObjectIsFunction;
   isGroup: IsGroupFunction;
   isDisorderly: ObjectIsDisorderlyFunction;
+  count: number;
   debug: boolean;
 }
 const defaultOptions: Options = {
   isNode: defaultIsAtomicFunction,
   isGroup: defaultIsGroupFunction,
   isDisorderly: defaultIsDisorderlyFunction,
+  count: 0,
   debug: false
 };
 
@@ -41,12 +46,14 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
     j = 0;
   const isGroup = opts.isGroup || defaultOptions.isGroup;
   let groups: { [key: string]: any } = {};
+  let count = opts.count || defaultOptions.count;
   while (i < tmpl.length || j < obj.length) {
     const tmplElement = tmpl[i];
     const objElement = obj[j];
 
     const result = patternMatch(tmplElement, objElement, opts);
-    const key = isGroup(tmplElement);
+    let key: false | GroupResult;
+    [key, opts.count] = isGroup(tmplElement, count);
 
     if (key) {
       const happyEnd: T[] = tmpl.slice(i + 1);
@@ -127,10 +134,11 @@ const patternMatchDisorderlyArray = <T extends IObject, O extends IObject>(
   if (opts.debug)
     console.log("patternMatchDisorderlyArray(", tmpl, ",", obj, ")");
   const isGroup = opts.isGroup || defaultOptions.isGroup;
+  let count = opts.count || defaultOptions.count;
 
   let groups: MatchedList = {};
-  const groupingTmpls = tmpl.filter(t => isGroup(t) !== false);
-  const notGroupingTmpls = tmpl.filter(t => isGroup(t) === false);
+  const groupingTmpls = tmpl.filter(t => isGroup(t, count)[0] !== false);
+  const notGroupingTmpls = tmpl.filter(t => isGroup(t, count)[0] === false);
   if (groupingTmpls.length === 0) {
     if (opts.debug) console.log("groupedTmpl(", groupingTmpls, ")");
     if (tmpl.length !== obj.length) {
@@ -176,7 +184,8 @@ const patternMatchDisorderlyArray = <T extends IObject, O extends IObject>(
   } else {
     const groupingTmpl = groupingTmpls[groupingTmpls.length - 1];
 
-    const restGroup = isGroup(groupingTmpl);
+    let restGroup: false | GroupResult;
+    [restGroup, opts.count] = isGroup(groupingTmpl, count);
 
     if (!restGroup) {
       return false;
@@ -303,6 +312,7 @@ export const patternMatch = (
   const isGroup = opts.isGroup || defaultOptions.isGroup;
   const isDisorderly = opts.isDisorderly || defaultOptions.isDisorderly;
   if (opts.debug) console.log(`patternMatch(`, tmpl, `,`, obj, `)`);
+  let count = opts.count || defaultOptions.count;
 
   if (typeof tmpl !== typeof obj) {
     return false;
@@ -311,8 +321,9 @@ export const patternMatch = (
   const tmplU = tmpl as unknown;
   const objU = obj as unknown;
 
-  if (isNode(tmplU) && isNode(objU) && isGroup(tmplU)) {
-    const key = isGroup(tmplU);
+  if (isNode(tmplU) && isNode(objU) && isGroup(tmplU, count)) {
+    let key: false | GroupResult;
+    [key, opts.count] = isGroup(tmplU, count);
 
     if (key) {
       if (opts.debug) console.log(`grouped:`, objU, `as`, key);

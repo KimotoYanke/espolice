@@ -1,16 +1,18 @@
 //@ts-nocheck
 import { FileNodeRule } from "espolice";
 export const Index: FileNodeRule = ({ getState, parent }) => {
-  const state = getState(Index, "moduleName");
+  const { moduleName } = getState(Index, "moduleName");
   return $quasiquote => {
     console.log(
       // @literal
-      state.moduleName
+      moduleName
     );
 
     //@ts-ignore
     export default () => {
       "@any";
+
+      console.log("moduleName = @one");
     };
   };
 };

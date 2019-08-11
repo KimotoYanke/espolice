@@ -52,16 +52,13 @@ export class PseudoDirectory<StateDataType = { [key in string]: any }> {
     return null;
   }
 
-  get state(): State<StateDataType, {}> {
-    return {
-      parent: this.parent ? this.parent.state : null,
-      ...this.stateData
-    };
-  }
+  localState: State;
+
   constructor(pathFromRoot: string, stateData: StateDataType) {
     this.type = "dir";
     this.pathFromRoot = pathFromRoot;
     this.stateData = stateData;
+    this.localState = new State();
   }
 }
 
@@ -72,24 +69,23 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
     return path.basename(this.pathFromRoot);
   }
   parent: PseudoDirectory | null = null;
-  stateData: { [key in string]: any };
-  stateDataUsing: { [key in string]: FileNodeRule } = {};
-  //明日ここらへんを移植する
-  //stateをグローバルに
+  ast?: t.File;
+  localState: State;
+
   get getState(): <S extends string>(
     nodeRule: FileNodeRule,
     ...args: S[]
   ) => { [key in S]: any } {
     const getStateData = (key: string): any => {
-      return this.stateData[key];
+      return this.localState.data[key];
     };
     const setStateData = (key: string, data: any) => {
-      this.stateData[key] = data;
+      this.localState.data[key] = data;
     };
     return <S extends string>(nodeRule: FileNodeRule, ...keys: S[]) => {
       let result: { [key in S]?: any } = {};
       for (const key of keys) {
-        this.stateDataUsing[key] = nodeRule;
+        this.localState.dataUsing[key] = nodeRule;
         result = {
           ...result,
           get [key]() {
@@ -103,11 +99,11 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
       return result as { [key in S]: any };
     };
   }
-  ast?: t.File;
+
   constructor(pathFromRoot: string, stateData: StateDataType) {
     this.type = "file";
     this.pathFromRoot = pathFromRoot;
-    this.stateData = stateData;
+    this.localState = new State();
   }
 }
 
@@ -190,7 +186,7 @@ type Options = {
   loserMode: boolean;
 };
 
-export const mount = <RS extends State<any, any>>(
+export const mount = <RS extends State>(
   rootState: RS,
   rootNodeRule: DirNodeRule,
   rootPath: string,

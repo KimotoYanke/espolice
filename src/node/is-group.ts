@@ -16,12 +16,12 @@ const parseGroupString = (
   return { key, cmd };
 };
 
-export const isGroup: IsGroupFunction = (obj: any): false | GroupResult => {
+export const isGroup: IsGroupFunction = (obj: any, count) => {
   if (!obj) {
-    return false;
+    return [false, count];
   }
   if (Object.keys(obj).length === 0) {
-    return false;
+    return [false, count];
   }
 
   if (isNode(obj) && (obj.leadingComments || obj.trailingComments)) {
@@ -29,31 +29,40 @@ export const isGroup: IsGroupFunction = (obj: any): false | GroupResult => {
   }
 
   if (t.isExpressionStatement(obj)) {
-    return isGroup(obj.expression);
+    return isGroup(obj.expression, count);
   }
 
   if (t.isSpreadElement(obj)) {
-    return isGroup(obj.argument);
+    return isGroup(obj.argument, count);
   }
 
   const strLiteral = obj;
   if (!t.isStringLiteral(strLiteral)) {
-    return false;
+    return [false, count];
   }
 
   const str = strLiteral.value;
 
   const result = parseGroupString(str);
   if (!result) {
-    return false;
+    return [false, count];
   }
   switch (result.cmd) {
     case "any":
-      return { type: "ANY", as: result.key || "any" };
+      return [
+        { type: "ANY", as: result.key || "any_" + count },
+        result.key ? count : count + 1
+      ];
     case "some":
-      return { type: "MULTIPLE", as: result.key || "some" };
+      return [
+        { type: "MULTIPLE", as: result.key || "some_" + count },
+        result.key ? count : count + 1
+      ];
     case "one":
-      return { type: "SINGLE", as: result.key || "one" };
+      return [
+        { type: "SINGLE", as: result.key || "one_" + count },
+        result.key ? count : count + 1
+      ];
   }
-  return false;
+  return [false, count];
 };

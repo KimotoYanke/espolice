@@ -1,3 +1,6 @@
-export type State<Options = {}, Parent extends State<{}, any> | null = null> = {
-  parent?: Parent;
-} & Options;
+import { FileNodeRule } from "..";
+
+export class State {
+  data: { [key in string]: any } = {};
+  dataUsing: { [key in string]: FileNodeRule } = {};
+}

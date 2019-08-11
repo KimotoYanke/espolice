@@ -12,7 +12,7 @@ describe("パターンマッチ", () => {
   describe("文字列でのテスト", () => {
     test("1回グループ化", () => {
       const result = patternMatch("lo*um".split(""), "lorem ipsum".split(""), {
-        isGroup: str => (str === "*" ? { type: "MULTIPLE", as: "*" } : false)
+        isGroup: str => [str === "*" ? { type: "MULTIPLE", as: "*" } : false, 0]
       });
       if (typeof result === "boolean") {
         expect(result).not.toBeBoolean();
@@ -25,12 +25,14 @@ describe("パターンマッチ", () => {
         "loA Bum".split(""),
         "lorem ipsum".split(""),
         {
-          isGroup: str =>
+          isGroup: str => [
             str === "A"
               ? { type: "MULTIPLE", as: "A" }
               : str === "B"
               ? { type: "MULTIPLE", as: "B" }
-              : false
+              : false,
+            0
+          ]
         }
       );
       if (typeof result === "boolean") {
@@ -44,7 +46,10 @@ describe("パターンマッチ", () => {
         "*m ipsum".split(""),
         "lorem ipsum".split(""),
         {
-          isGroup: str => (str === "*" ? { type: "MULTIPLE", as: "*" } : false)
+          isGroup: str => [
+            str === "*" ? { type: "MULTIPLE", as: "*" } : false,
+            0
+          ]
         }
       );
       if (typeof result === "boolean") {
@@ -58,7 +63,10 @@ describe("パターンマッチ", () => {
         "lorem ip*".split(""),
         "lorem ipsum".split(""),
         {
-          isGroup: str => (str === "*" ? { type: "MULTIPLE", as: "*" } : false)
+          isGroup: str => [
+            str === "*" ? { type: "MULTIPLE", as: "*" } : false,
+            0
+          ]
         }
       );
       if (typeof result === "boolean") {
@@ -72,12 +80,14 @@ describe("パターンマッチ", () => {
         "loA Bum".split(""),
         "lorem ipsum".split(""),
         {
-          isGroup: str =>
+          isGroup: str => [
             str === "A"
               ? { type: "ANY", as: "A" }
               : str === "B"
               ? { type: "MULTIPLE", as: "B" }
-              : false
+              : false,
+            0
+          ]
         }
       );
       if (typeof result === "boolean") {
@@ -92,12 +102,14 @@ describe("パターンマッチ", () => {
 
     test("SINGLEでグループ化", () => {
       const opts = {
-        isGroup: (str: string): GroupResult | false =>
+        isGroup: (str: string): [GroupResult | false, number] => [
           str === "A"
             ? { type: "SINGLE", as: "A" }
             : str === "B"
             ? { type: "MULTIPLE", as: "B" }
-            : false
+            : false,
+          0
+        ]
       };
       const result1 = patternMatch(
         "Arem Bum".split(""),
@@ -122,7 +134,7 @@ describe("パターンマッチ", () => {
       { a: "a", b: "b", any: "ANY" },
       { a: "a", b: "b", any: "placedString" },
       {
-        isGroup: str => (str === "ANY" ? { type: "ANY", as: "ANY" } : false)
+        isGroup: str => [str === "ANY" ? { type: "ANY", as: "ANY" } : false, 0]
       }
     );
     if (typeof result === "boolean") {
@@ -310,7 +322,7 @@ describe("パターンマッチ", () => {
 
         const result = patternMatchAST(tmplAst, objAst);
         expect(result).toEqual({
-          one: t.stringLiteral("one"),
+          one_0: t.stringLiteral("one"),
           two: t.stringLiteral("two"),
           rest: [
             t.objectProperty(
