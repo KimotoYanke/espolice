@@ -10,29 +10,54 @@ type MatchedList = {
   [key: number]: any;
 };
 
+const matchedListMerge = (
+  base: MatchedList,
+  appended: MatchedList,
+  genericList: string[]
+) => {
+  const result = { ...base };
+  for (let matchedKey in appended) {
+    let actualMatchedKey = matchedKey;
+    let i = 0;
+    const groups = matchedKey.match(/^(.+)_(\d+)$/);
+    if (groups) {
+      actualMatchedKey = groups[1];
+      i = parseInt(groups[2]);
+    }
+    if (genericList.includes(actualMatchedKey)) {
+      let matchedKeyWithCount: string;
+      do {
+        matchedKeyWithCount = actualMatchedKey + "_" + i;
+        i++;
+      } while (result[matchedKeyWithCount]);
+      result[matchedKeyWithCount] = appended[matchedKey];
+      continue;
+    }
+    result[matchedKey] = appended[matchedKey];
+  }
+  return result;
+};
+
 export type ObjectIsFunction = (obj: any) => boolean;
 export type GroupResult = { type: "MULTIPLE" | "SINGLE" | "ANY"; as: string };
-export type IsGroupFunction = (
-  obj: any,
-  count: number
-) => [GroupResult | false, number];
+export type IsGroupFunction = (obj: any) => GroupResult | false;
 export type ObjectIsDisorderlyFunction = (obj: object) => false | string;
 const defaultIsAtomicFunction: ObjectIsFunction = () => true;
-const defaultIsGroupFunction: IsGroupFunction = (_, n) => [false, n];
+const defaultIsGroupFunction: IsGroupFunction = _ => false;
 const defaultIsDisorderlyFunction: ObjectIsDisorderlyFunction = () => false;
 
 interface Options {
   isNode: ObjectIsFunction;
   isGroup: IsGroupFunction;
   isDisorderly: ObjectIsDisorderlyFunction;
-  count: number;
+  generic: string[];
   debug: boolean;
 }
 const defaultOptions: Options = {
   isNode: defaultIsAtomicFunction,
   isGroup: defaultIsGroupFunction,
   isDisorderly: defaultIsDisorderlyFunction,
-  count: 0,
+  generic: ["one", "some", "any"],
   debug: false
 };
 
@@ -45,29 +70,27 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
   let i = 0,
     j = 0;
   const isGroup = opts.isGroup || defaultOptions.isGroup;
+  const generic = opts.generic || defaultOptions.generic;
   let groups: { [key: string]: any } = {};
-  let count = opts.count || defaultOptions.count;
   while (i < tmpl.length || j < obj.length) {
     const tmplElement = tmpl[i];
     const objElement = obj[j];
+    let matched = patternMatch(tmplElement, objElement, opts);
 
-    const result = patternMatch(tmplElement, objElement, opts);
-    let key: false | GroupResult;
-    [key, opts.count] = isGroup(tmplElement, count);
+    const key: false | GroupResult = isGroup(tmplElement);
 
     if (key) {
       const happyEnd: T[] = tmpl.slice(i + 1);
+      let thisGroup: MatchedList = [];
       if (opts.debug) console.log("happyEnd", happyEnd);
       if (happyEnd.length === 0) {
         if (opts.debug) console.log("obj.slice(j) =", obj.slice(j));
-        groups[key.as] = obj.slice(j);
+        thisGroup = key.type === "SINGLE" ? obj[j] : obj.slice(j);
+        groups = matchedListMerge(groups, { [key.as]: thisGroup }, generic);
         break;
-      } else {
-        groups[key.as] = [];
       }
 
       // tmplが[0,*,2,3]で現在"*"の時、[2,3]をhappyEndとし、[0,4,5,6,2,3]からtailして行って[2,3]と一致するまで待つ
-      let matched: MatchedList | false;
       switch (key.type) {
         case "MULTIPLE":
         case "ANY":
@@ -77,7 +100,7 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
             if (opts.debug) console.log("obj.slice(j):", obj.slice(j));
             if (opts.debug) console.log("matched:", matched, happyEnd);
 
-            groups[key.as].push(obj[j]);
+            thisGroup.push(obj[j]);
             j++;
             if (obj.slice(j).length === 0) {
               if (opts.debug) console.log("tail(obj).length == 0");
@@ -85,36 +108,29 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
               return false;
             }
           }
-          groups = { ...groups, ...matched };
+
           if (opts.debug) console.log({ groups });
           j--;
           if (opts.debug)
-            console.log(
-              "matched:",
-              i,
-              tmpl[i],
-              j,
-              obj[j],
-              matched,
-              groups[key.as]
-            );
+            console.log("matched:", i, tmpl[i], j, obj[j], matched, thisGroup);
+          matched = matchedListMerge(matched, { [key.as]: thisGroup }, generic);
           break;
         case "SINGLE":
-          groups[key.as] = obj[j];
-          j++;
-          matched = patternMatch(happyEnd, obj.slice(j), opts);
-          if (matched === false) {
+          const localMatched = patternMatch(happyEnd, obj.slice(j + 1), opts);
+          if (localMatched === false) {
             return false;
           }
-          groups = { ...groups, ...matched };
+          delete localMatched[key.as];
+          matched = { [key.as]: obj[j] };
           if (opts.debug) console.log({ groups });
-          j--;
           break;
       }
-    } else if (result === false) {
+    }
+    if (matched === false) {
+      if (opts.debug) console.log("match failed");
       return false;
     } else {
-      groups = { ...groups, ...result };
+      groups = matchedListMerge(groups, matched, generic);
     }
 
     // ここにpatternMatchからのデータがある場合の処理を書く
@@ -134,11 +150,11 @@ const patternMatchDisorderlyArray = <T extends IObject, O extends IObject>(
   if (opts.debug)
     console.log("patternMatchDisorderlyArray(", tmpl, ",", obj, ")");
   const isGroup = opts.isGroup || defaultOptions.isGroup;
-  let count = opts.count || defaultOptions.count;
+  const generic = opts.generic || defaultOptions.generic;
 
   let groups: MatchedList = {};
-  const groupingTmpls = tmpl.filter(t => isGroup(t, count)[0] !== false);
-  const notGroupingTmpls = tmpl.filter(t => isGroup(t, count)[0] === false);
+  const groupingTmpls = tmpl.filter(t => isGroup(t) !== false);
+  const notGroupingTmpls = tmpl.filter(t => isGroup(t) === false);
   if (groupingTmpls.length === 0) {
     if (opts.debug) console.log("groupedTmpl(", groupingTmpls, ")");
     if (tmpl.length !== obj.length) {
@@ -184,8 +200,7 @@ const patternMatchDisorderlyArray = <T extends IObject, O extends IObject>(
   } else {
     const groupingTmpl = groupingTmpls[groupingTmpls.length - 1];
 
-    let restGroup: false | GroupResult;
-    [restGroup, opts.count] = isGroup(groupingTmpl, count);
+    const restGroup: false | GroupResult = isGroup(groupingTmpl);
 
     if (!restGroup) {
       return false;
@@ -225,7 +240,7 @@ const patternMatchDisorderlyArray = <T extends IObject, O extends IObject>(
       objCache = newObjCache;
     }
 
-    groups[restGroup.as] = objCache;
+    groups = matchedListMerge(groups, { [restGroup.as]: objCache }, generic);
   }
 
   return groups;
@@ -238,6 +253,7 @@ const patternMatchObject = <T, O>(
 ): MatchedList | false => {
   if (opts.debug) console.log("patternMatchObject(", tmpl, ",", obj, ")");
   const isDisorderly = opts.isDisorderly || defaultOptions.isDisorderly;
+  const generic = opts.generic || defaultOptions.generic;
 
   const tmplKeys = Object.keys(tmpl);
   const objKeys = Object.keys(obj);
@@ -289,7 +305,7 @@ const patternMatchObject = <T, O>(
       return false;
     }
 
-    groups = { ...groups, ...matched };
+    groups = matchedListMerge(groups, matched, generic);
   }
   if (opts.debug) console.log({ groups });
 
@@ -312,18 +328,13 @@ export const patternMatch = (
   const isGroup = opts.isGroup || defaultOptions.isGroup;
   const isDisorderly = opts.isDisorderly || defaultOptions.isDisorderly;
   if (opts.debug) console.log(`patternMatch(`, tmpl, `,`, obj, `)`);
-  let count = opts.count || defaultOptions.count;
-
-  if (typeof tmpl !== typeof obj) {
-    return false;
-  }
 
   const tmplU = tmpl as unknown;
   const objU = obj as unknown;
 
-  if (isNode(tmplU) && isNode(objU) && isGroup(tmplU, count)) {
-    let key: false | GroupResult;
-    [key, opts.count] = isGroup(tmplU, count);
+  if (isGroup(tmplU)) {
+    if (opts.debug) console.log(tmplU, ` is Grouping`);
+    const key: false | GroupResult = isGroup(tmplU);
 
     if (key) {
       if (opts.debug) console.log(`grouped:`, objU, `as`, key);
@@ -336,6 +347,10 @@ export const patternMatch = (
           return false;
       }
     }
+  }
+
+  if (typeof tmpl !== typeof obj) {
+    return false;
   }
 
   if (tmpl instanceof Array && obj instanceof Array) {

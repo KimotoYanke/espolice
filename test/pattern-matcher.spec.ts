@@ -7,12 +7,14 @@ import "jest-extended";
 import { nodePurify } from "../src/node/node-purify";
 import * as t from "@babel/types";
 import { patternMatchAST } from "../src/pattern-matcher";
+import { isGroup } from "../src/node/is-group";
+import { isNode } from "../src/node/is-node";
 
 describe("パターンマッチ", () => {
   describe("文字列でのテスト", () => {
     test("1回グループ化", () => {
       const result = patternMatch("lo*um".split(""), "lorem ipsum".split(""), {
-        isGroup: str => [str === "*" ? { type: "MULTIPLE", as: "*" } : false, 0]
+        isGroup: str => (str === "*" ? { type: "MULTIPLE", as: "*" } : false)
       });
       if (typeof result === "boolean") {
         expect(result).not.toBeBoolean();
@@ -25,14 +27,12 @@ describe("パターンマッチ", () => {
         "loA Bum".split(""),
         "lorem ipsum".split(""),
         {
-          isGroup: str => [
+          isGroup: str =>
             str === "A"
               ? { type: "MULTIPLE", as: "A" }
               : str === "B"
               ? { type: "MULTIPLE", as: "B" }
-              : false,
-            0
-          ]
+              : false
         }
       );
       if (typeof result === "boolean") {
@@ -46,10 +46,7 @@ describe("パターンマッチ", () => {
         "*m ipsum".split(""),
         "lorem ipsum".split(""),
         {
-          isGroup: str => [
-            str === "*" ? { type: "MULTIPLE", as: "*" } : false,
-            0
-          ]
+          isGroup: str => (str === "*" ? { type: "MULTIPLE", as: "*" } : false)
         }
       );
       if (typeof result === "boolean") {
@@ -63,10 +60,7 @@ describe("パターンマッチ", () => {
         "lorem ip*".split(""),
         "lorem ipsum".split(""),
         {
-          isGroup: str => [
-            str === "*" ? { type: "MULTIPLE", as: "*" } : false,
-            0
-          ]
+          isGroup: str => (str === "*" ? { type: "MULTIPLE", as: "*" } : false)
         }
       );
       if (typeof result === "boolean") {
@@ -80,14 +74,12 @@ describe("パターンマッチ", () => {
         "loA Bum".split(""),
         "lorem ipsum".split(""),
         {
-          isGroup: str => [
+          isGroup: str =>
             str === "A"
               ? { type: "ANY", as: "A" }
               : str === "B"
               ? { type: "MULTIPLE", as: "B" }
-              : false,
-            0
-          ]
+              : false
         }
       );
       if (typeof result === "boolean") {
@@ -102,26 +94,24 @@ describe("パターンマッチ", () => {
 
     test("SINGLEでグループ化", () => {
       const opts = {
-        isGroup: (str: string): [GroupResult | false, number] => [
+        isGroup: (str: string): GroupResult | false =>
           str === "A"
             ? { type: "SINGLE", as: "A" }
             : str === "B"
             ? { type: "MULTIPLE", as: "B" }
-            : false,
-          0
-        ]
+            : false
       };
       const result1 = patternMatch(
         "Arem Bum".split(""),
         "lorem ipsum".split(""),
-        opts
+        { ...opts }
       );
       expect(result1).toBeFalse();
 
       const result2 = patternMatch(
         "AArem Bum".split(""),
         "lorem ipsum".split(""),
-        opts
+        { ...opts }
       );
       expect(result2).toStrictEqual({
         A: "o",
@@ -129,20 +119,36 @@ describe("パターンマッチ", () => {
       });
     });
   });
-  test("オブジェクトでのテスト", () => {
-    const result = patternMatch(
-      { a: "a", b: "b", any: "ANY" },
-      { a: "a", b: "b", any: "placedString" },
-      {
-        isGroup: str => [str === "ANY" ? { type: "ANY", as: "ANY" } : false, 0]
+  describe("オブジェクトでのテスト", () => {
+    test("オブジェクト", () => {
+      const result = patternMatch(
+        { a: "a", b: "b", any: "ANY" },
+        { a: "a", b: "b", any: "placedString" },
+        {
+          isGroup: str => (str === "ANY" ? { type: "ANY", as: "ANY" } : false)
+        }
+      );
+      if (typeof result === "boolean") {
+        expect(result).not.toBeBoolean();
+        return;
       }
-    );
-    if (typeof result === "boolean") {
-      expect(result).not.toBeBoolean();
-      return;
-    }
-    expect(result).toStrictEqual({
-      ANY: "placedString"
+      expect(result).toStrictEqual({
+        ANY: "placedString"
+      });
+    });
+    test("anyの順番", () => {
+      const one = template.expression`"@one"`();
+      const tmpl = { 1: one, obj: { 2: one, 3: one } } as unknown;
+      const obj = { 1: 1, obj: { 2: 2, 3: 3 } } as unknown;
+
+      const result = patternMatch(nodePurify(tmpl) as t.Node, obj as t.Node, {
+        isGroup: isGroup
+      });
+      expect(result).toEqual({
+        one_0: 1,
+        one_1: 2,
+        one_2: 3
+      });
     });
   });
 
@@ -279,8 +285,8 @@ describe("パターンマッチ", () => {
         const tmplAst = nodePurify(
           template.program`
             export default {
-              name:"one=@any",
-              data:"two=@any",
+              name:"first=@any",
+              data:"second=@any",
             }`()
         );
 
@@ -294,8 +300,8 @@ describe("パターンマッチ", () => {
 
         const result = patternMatchAST(tmplAst, objAst);
         expect(result).toEqual({
-          one: t.stringLiteral("one"),
-          two: t.stringLiteral("two")
+          first: t.stringLiteral("one"),
+          second: t.stringLiteral("two")
         });
       });
 
@@ -351,6 +357,32 @@ describe("パターンマッチ", () => {
 
       const result = patternMatchAST(tmpl, obj);
       expect(result).toBeFalse();
+    });
+
+    test("oneの順番", () => {
+      const tmpl = template.program`a("@one", "@one");b("@one","@one")`();
+      const obj = template.program`a(0, 1);b(2,3)`();
+
+      const result = patternMatchAST(tmpl, obj);
+      expect(result).toEqual({
+        one_0: t.numericLiteral(0),
+        one_1: t.numericLiteral(1),
+        one_2: t.numericLiteral(2),
+        one_3: t.numericLiteral(3)
+      });
+    });
+    test("oneの順番", () => {
+      const tmpl = template.program`a("@one", "@one");b("@one",c("@one","@one"))`();
+      const obj = template.program`a(0, 1);b(2,c(3,4))`();
+
+      const result = patternMatchAST(tmpl, obj);
+      expect(result).toEqual({
+        one_0: t.numericLiteral(0),
+        one_1: t.numericLiteral(1),
+        one_2: t.numericLiteral(2),
+        one_3: t.numericLiteral(3),
+        one_4: t.numericLiteral(4)
+      });
     });
   });
 });

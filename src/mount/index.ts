@@ -205,9 +205,14 @@ export const mount = <RS extends State>(
   );
   const findNodeFromRoot = (pathFromRoot: string) =>
     root.findNodeFromThis(pathFromRoot);
+  let flags: { [key in string]: boolean } = {};
 
   watcher.on("all", (event, p, stats) => {
     const pathFromRoot = path.relative(rootPath, p);
+    if (flags[pathFromRoot]) {
+      flags[pathFromRoot] = false;
+      return;
+    }
     const splittedPath = path.join(pathFromRoot).split("/");
     const parentPath = path.join(...splittedPath.slice(0, -1)) || null;
     const thisNodeRule = findNodeRule(pathFromRoot, rootNodeRule);
@@ -231,13 +236,12 @@ export const mount = <RS extends State>(
 
           const tmplAst = thisNodeRule({ parent, getState });
           const tmpl = toProgram(tmplAst);
-          console.log(patternMatchAST(tmpl, ast), tmpl, ast);
-          watcher.unwatch(path.join(rootPath, pathFromRoot));
+          console.log(patternMatchAST(tmpl, ast, true), tmpl, ast);
+          flags[pathFromRoot] = true;
           fs.writeFileSync(
             path.join(rootPath, pathFromRoot),
             generate(tmpl).code
           );
-          watcher.add(path.join(rootPath, pathFromRoot));
         }
         break;
       case "addDir":

@@ -11,8 +11,6 @@ export const Index: FileNodeRule = ({ getState, parent }) => {
     //@ts-ignore
     export default () => {
       "@any";
-
-      console.log("moduleName = @one");
     };
   };
 };
