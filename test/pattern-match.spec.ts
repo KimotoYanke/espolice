@@ -1,5 +1,5 @@
 import template from "@babel/template";
-import { patternMatch } from "../src/pattern-matcher/pattern-matcher";
+import { patternMatch } from "../src/pattern-matcher/pattern-match";
 import "jest-extended";
 import { nodePurify } from "../src/node/node-purify";
 import * as t from "@babel/types";

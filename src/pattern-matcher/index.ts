@@ -1,15 +1,31 @@
 import * as t from "@babel/types";
-import { patternMatch } from "./pattern-matcher";
+import { patternMatch } from "./pattern-match";
 import { isNode } from "../node/is-node";
-import { isGroup } from "../node/is-group";
+import { isGroup, fromGroup } from "../node/is-group";
 import { isDisorderly } from "../node/is-disorderly";
 import { nodePurify } from "../node/node-purify";
+import { patternReset } from "./pattern-reset";
+import { MatchedList } from "./matched-list";
 
 export const patternMatchAST = (tmpl: t.Node, obj: t.Node, debug?: boolean) => {
   return patternMatch(nodePurify(tmpl), nodePurify(obj), {
     debug,
     isNode,
     isGroup,
+    isDisorderly,
+    generic: ["one", "some", "any"]
+  });
+};
+export const patternResetAST = (
+  tmpl: t.Node,
+  matched: MatchedList,
+  debug?: boolean
+) => {
+  return patternReset(nodePurify(tmpl), matched, {
+    debug,
+    isNode,
+    isGroup,
+    fromGroup,
     isDisorderly,
     generic: ["one", "some", "any"]
   });
