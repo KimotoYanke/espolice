@@ -1,70 +1,16 @@
 import { isEqual } from "lodash";
-
-interface IObject {
-  [key: string]: any;
-  [key: number]: any;
-}
-
-type MatchedList = {
-  [key: string]: any;
-  [key: number]: any;
-};
-
-const matchedListMerge = (
-  base: MatchedList,
-  appended: MatchedList,
-  genericList: string[]
-) => {
-  const result = { ...base };
-  for (let matchedKey in appended) {
-    let actualMatchedKey = matchedKey;
-    let i = 0;
-    const groups = matchedKey.match(/^(.+)_(\d+)$/);
-    if (groups) {
-      actualMatchedKey = groups[1];
-      i = parseInt(groups[2]);
-    }
-    if (genericList.includes(actualMatchedKey)) {
-      let matchedKeyWithCount: string;
-      do {
-        matchedKeyWithCount = actualMatchedKey + "_" + i;
-        i++;
-      } while (result[matchedKeyWithCount]);
-      result[matchedKeyWithCount] = appended[matchedKey];
-      continue;
-    }
-    result[matchedKey] = appended[matchedKey];
-  }
-  return result;
-};
-
-export type ObjectIsFunction = (obj: any) => boolean;
-export type GroupResult = { type: "MULTIPLE" | "SINGLE" | "ANY"; as: string };
-export type IsGroupFunction = (obj: any) => GroupResult | false;
-export type ObjectIsDisorderlyFunction = (obj: object) => false | string;
-const defaultIsAtomicFunction: ObjectIsFunction = () => true;
-const defaultIsGroupFunction: IsGroupFunction = _ => false;
-const defaultIsDisorderlyFunction: ObjectIsDisorderlyFunction = () => false;
-
-interface Options {
-  isNode: ObjectIsFunction;
-  isGroup: IsGroupFunction;
-  isDisorderly: ObjectIsDisorderlyFunction;
-  generic: string[];
-  debug: boolean;
-}
-const defaultOptions: Options = {
-  isNode: defaultIsAtomicFunction,
-  isGroup: defaultIsGroupFunction,
-  isDisorderly: defaultIsDisorderlyFunction,
-  generic: ["one", "some", "any"],
-  debug: false
-};
+import {
+  MatchOptions,
+  GroupResult,
+  defaultOptions,
+  MatchedList,
+  matchedListMerge
+} from "./matched-list";
 
 const patternMatchArray = <T extends IObject, O extends IObject>(
   tmpl: T[],
   obj: O[],
-  opts: Partial<Options> = defaultOptions
+  opts: Partial<MatchOptions> = defaultOptions
 ): MatchedList | false => {
   if (opts.debug) console.log(`patternMatchArray(`, tmpl, `,`, obj, `)`);
   let i = 0,
@@ -145,7 +91,7 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
 const patternMatchDisorderlyArray = <T extends IObject, O extends IObject>(
   tmpl: T[],
   obj: O[],
-  opts: Partial<Options> = defaultOptions
+  opts: Partial<MatchOptions> = defaultOptions
 ): MatchedList | false => {
   if (opts.debug)
     console.log("patternMatchDisorderlyArray(", tmpl, ",", obj, ")");
@@ -249,7 +195,7 @@ const patternMatchDisorderlyArray = <T extends IObject, O extends IObject>(
 const patternMatchObject = <T, O>(
   tmpl: IObject,
   obj: IObject,
-  opts: Partial<Options> = defaultOptions
+  opts: Partial<MatchOptions> = defaultOptions
 ): MatchedList | false => {
   if (opts.debug) console.log("patternMatchObject(", tmpl, ",", obj, ")");
   const isDisorderly = opts.isDisorderly || defaultOptions.isDisorderly;
@@ -322,7 +268,7 @@ const patternMatchObject = <T, O>(
 export const patternMatch = (
   tmpl: any,
   obj: any,
-  opts: Partial<Options> = defaultOptions
+  opts: Partial<MatchOptions> = defaultOptions
 ): MatchedList | false => {
   const isNode = opts.isNode || defaultOptions.isNode;
   const isGroup = opts.isGroup || defaultOptions.isGroup;

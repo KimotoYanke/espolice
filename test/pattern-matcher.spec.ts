@@ -371,7 +371,7 @@ describe("パターンマッチ", () => {
         one_3: t.numericLiteral(3)
       });
     });
-    test("oneの順番", () => {
+    test("oneの順番 - 複数階層", () => {
       const tmpl = template.program`a("@one", "@one");b("@one",c("@one","@one"))`();
       const obj = template.program`a(0, 1);b(2,c(3,4))`();
 
@@ -382,6 +382,19 @@ describe("パターンマッチ", () => {
         one_2: t.numericLiteral(2),
         one_3: t.numericLiteral(3),
         one_4: t.numericLiteral(4)
+      });
+    });
+    test("anyの順番 - 複数階層", () => {
+      const tmpl = template.program`a("@one", "@any");b("@one",c("@one","@any"))`();
+      const obj = template.program`a(0, 1);b(2,c(3,4))`();
+
+      const result = patternMatchAST(tmpl, obj);
+      expect(result).toEqual({
+        one_0: t.numericLiteral(0),
+        any_0: [t.numericLiteral(1)],
+        one_1: t.numericLiteral(2),
+        one_2: t.numericLiteral(3),
+        any_1: [t.numericLiteral(4)]
       });
     });
   });
