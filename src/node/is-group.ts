@@ -1,9 +1,10 @@
 import * as t from "@babel/types";
+import { isNode } from "./is-node";
 import {
   IsGroupFunction,
-  GroupResult
-} from "../pattern-matcher/pattern-matcher";
-import { isNode } from "./is-node";
+  FromGroupFunction
+} from "../pattern-matcher/matched-list";
+import { nodePurify } from "./node-purify";
 
 const parseGroupString = (
   str: string
@@ -56,4 +57,15 @@ export const isGroup: IsGroupFunction = (obj: any) => {
       return { type: "SINGLE", as: result.key || "one" };
   }
   return false;
+};
+
+export const fromGroup: FromGroupFunction = group => {
+  switch (group.type) {
+    case "ANY":
+      return nodePurify(t.stringLiteral(group.as + " = @any"));
+    case "MULTIPLE":
+      return nodePurify(t.stringLiteral(group.as + " = @some"));
+    case "SINGLE":
+      return nodePurify(t.stringLiteral(group.as + " = @one"));
+  }
 };

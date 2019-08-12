@@ -3,9 +3,9 @@ import {
   MatchOptions,
   GroupResult,
   defaultOptions,
-  MatchedList,
-  matchedListMerge
+  MatchedList
 } from "./matched-list";
+import { patternPreprocess } from "./pattern-preprocess";
 
 const patternMatchArray = <T extends IObject, O extends IObject>(
   tmpl: T[],
@@ -32,7 +32,7 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
       if (happyEnd.length === 0) {
         if (opts.debug) console.log("obj.slice(j) =", obj.slice(j));
         thisGroup = key.type === "SINGLE" ? obj[j] : obj.slice(j);
-        groups = matchedListMerge(groups, { [key.as]: thisGroup }, generic);
+        groups[key.as] = thisGroup;
         break;
       }
 
@@ -59,7 +59,7 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
           j--;
           if (opts.debug)
             console.log("matched:", i, tmpl[i], j, obj[j], matched, thisGroup);
-          matched = matchedListMerge(matched, { [key.as]: thisGroup }, generic);
+          matched[key.as] = thisGroup;
           break;
         case "SINGLE":
           const localMatched = patternMatch(happyEnd, obj.slice(j + 1), opts);
@@ -76,7 +76,7 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
       if (opts.debug) console.log("match failed");
       return false;
     } else {
-      groups = matchedListMerge(groups, matched, generic);
+      groups = { ...groups, ...matched };
     }
 
     // ここにpatternMatchからのデータがある場合の処理を書く
@@ -186,7 +186,7 @@ const patternMatchDisorderlyArray = <T extends IObject, O extends IObject>(
       objCache = newObjCache;
     }
 
-    groups = matchedListMerge(groups, { [restGroup.as]: objCache }, generic);
+    groups[restGroup.as] = objCache;
   }
 
   return groups;
@@ -199,7 +199,6 @@ const patternMatchObject = <T, O>(
 ): MatchedList | false => {
   if (opts.debug) console.log("patternMatchObject(", tmpl, ",", obj, ")");
   const isDisorderly = opts.isDisorderly || defaultOptions.isDisorderly;
-  const generic = opts.generic || defaultOptions.generic;
 
   const tmplKeys = Object.keys(tmpl);
   const objKeys = Object.keys(obj);
@@ -251,7 +250,7 @@ const patternMatchObject = <T, O>(
       return false;
     }
 
-    groups = matchedListMerge(groups, matched, generic);
+    groups = { ...groups, ...matched };
   }
   if (opts.debug) console.log({ groups });
 
@@ -266,13 +265,14 @@ const patternMatchObject = <T, O>(
  * @returns マッチに失敗した時、falseを返す
  */
 export const patternMatch = (
-  tmpl: any,
+  tmplRaw: any,
   obj: any,
   opts: Partial<MatchOptions> = defaultOptions
 ): MatchedList | false => {
   const isNode = opts.isNode || defaultOptions.isNode;
   const isGroup = opts.isGroup || defaultOptions.isGroup;
   const isDisorderly = opts.isDisorderly || defaultOptions.isDisorderly;
+  const tmpl = patternPreprocess(tmplRaw, opts);
   if (opts.debug) console.log(`patternMatch(`, tmpl, `,`, obj, `)`);
 
   const tmplU = tmpl as unknown;

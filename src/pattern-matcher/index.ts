@@ -10,6 +10,7 @@ export const patternMatchAST = (tmpl: t.Node, obj: t.Node, debug?: boolean) => {
     debug,
     isNode,
     isGroup,
-    isDisorderly
+    isDisorderly,
+    generic: ["one", "some", "any"]
   });
 };

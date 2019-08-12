@@ -1,14 +1,12 @@
 import template from "@babel/template";
-import {
-  patternMatch,
-  GroupResult
-} from "../src/pattern-matcher/pattern-matcher";
+import { patternMatch } from "../src/pattern-matcher/pattern-matcher";
 import "jest-extended";
 import { nodePurify } from "../src/node/node-purify";
 import * as t from "@babel/types";
 import { patternMatchAST } from "../src/pattern-matcher";
 import { isGroup } from "../src/node/is-group";
 import { isNode } from "../src/node/is-node";
+import { GroupResult } from "../src/pattern-matcher/matched-list";
 
 describe("パターンマッチ", () => {
   describe("文字列でのテスト", () => {
@@ -391,10 +389,10 @@ describe("パターンマッチ", () => {
       const result = patternMatchAST(tmpl, obj);
       expect(result).toEqual({
         one_0: t.numericLiteral(0),
-        any_0: [t.numericLiteral(1)],
-        one_1: t.numericLiteral(2),
-        one_2: t.numericLiteral(3),
-        any_1: [t.numericLiteral(4)]
+        any_1: [t.numericLiteral(1)],
+        one_2: t.numericLiteral(2),
+        one_3: t.numericLiteral(3),
+        any_4: [t.numericLiteral(4)]
       });
     });
   });
