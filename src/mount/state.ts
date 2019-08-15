@@ -2,5 +2,5 @@ import { FileNodeRule } from "..";
 
 export class State {
   data: { [key in string]: any } = {};
-  dataUsing: { [key in string]: FileNodeRule } = {};
+  datumUser: { [key in string]: FileNodeRule } = {};
 }
