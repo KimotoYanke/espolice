@@ -1,6 +1,6 @@
 import { PseudoNode } from ".";
 import { DirNodeRule } from "..";
-import { State } from "./state";
+import { State, NodeRulePath, StateInterface } from "./state";
 import * as path from "path";
 import { findNodeRule } from "./find-node-rule";
 import { fs } from "mz";
@@ -11,6 +11,7 @@ const readdirAsPseudoDirectory = (
   rootPath: string,
   parent: PseudoDirectory | null,
   rootNodeRule: DirNodeRule,
+  stateInterface: StateInterface,
   opts?: { ignore: string[] }
 ): PseudoDirectory => {
   const notNull = <T>(nullable: T | null): nullable is T => {
@@ -39,13 +40,18 @@ const readdirAsPseudoDirectory = (
             rootPath,
             dir,
             rootNodeRule,
+            stateInterface,
             opts
           );
 
           return result;
         }
 
-        const result: PseudoFile = new PseudoFile(newPathFromRoot, dir);
+        const result: PseudoFile = new PseudoFile(
+          newPathFromRoot,
+          dir,
+          stateInterface
+        );
         return result;
       }
     )
@@ -78,7 +84,7 @@ export class PseudoDirectory<StateDataType = { [key in string]: any }> {
     ) || [new DirNodeRule()])[0];
   }
 
-  get nodeRulePath(): string | null {
+  get nodeRulePath(): NodeRulePath | null {
     return (findNodeRule(
       this.pathFromRoot,
       this.rootPath,
@@ -147,13 +153,15 @@ export class PseudoDirectory<StateDataType = { [key in string]: any }> {
 
 export const getRootDirectory = (
   rootPath: string,
-  rootNodeRule: DirNodeRule
+  rootNodeRule: DirNodeRule,
+  stateInterface: StateInterface
 ) => {
   const root: PseudoDirectory = readdirAsPseudoDirectory(
     ".",
     rootPath,
     null,
     rootNodeRule,
+    stateInterface,
     {
       ignore: ["node_modules", ".git"]
     }

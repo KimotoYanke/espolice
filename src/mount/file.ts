@@ -1,6 +1,6 @@
 import * as path from "path";
 import { PseudoDirectory } from "./directory";
-import { State } from "./state";
+import { NodeRulePath, StateInterface } from "./state";
 import { FileNodeRule } from "..";
 import { findNodeRule } from "./find-node-rule";
 import { toProgram } from "./to-program";
@@ -21,22 +21,42 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
   }
   parent: PseudoDirectory;
   ast?: t.Node;
-  localState: State;
+  stateInterface!: StateInterface;
+  get getStateDatum() {
+    return this.stateInterface.getStateDatum;
+  }
+  get setStateDatum() {
+    return this.stateInterface.setStateDatum;
+  }
+  addDatumUser(key: string) {
+    if (this.nodeRulePath) {
+      this.stateInterface.addDatumUser(key, this.nodeRulePath);
+    }
+  }
 
-  get getState(): <S extends string>(
-    nodeRule: FileNodeRule,
-    ...args: S[]
-  ) => { [key in S]: any } {
+  get getState(): <S extends string>(...args: S[]) => { [key in S]: any } {
     const getStateData = (key: string): any => {
-      return this.localState.data[key];
+      return this.getStateDatum(key);
     };
     const setStateData = (key: string, data: any) => {
-      this.localState.data[key] = data;
+      this.setStateDatum(key, data);
+      const userPaths: NodeRulePath[] = this.stateInterface.getDatumUsers(key);
+
+      for (const nodeRulePath of userPaths) {
+        const nodes = this.stateInterface.getNodesFromNodeRulePath(
+          nodeRulePath
+        );
+        if (nodes !== null) {
+          nodes.forEach(node => {
+            console.log(node.name);
+          });
+        }
+      }
     };
-    return <S extends string>(nodeRule: FileNodeRule, ...keys: S[]) => {
+    return <S extends string>(...keys: S[]) => {
       let result: { [key in S]?: any } = {};
       for (const key of keys) {
-        this.localState.datumUser[key] = nodeRule;
+        this.addDatumUser(key);
         result = {
           ...result,
           get [key]() {
@@ -65,15 +85,17 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
 
   get nodeRule(): FileNodeRule {
     const defaultFileNodeRule: FileNodeRule = () => t.program([]);
-    return (findNodeRule(
-      this.pathFromRoot,
-      this.rootPath,
-      this.root.nodeRule,
-      false
-    ) || [defaultFileNodeRule])[0];
+    return (
+      (findNodeRule(
+        this.pathFromRoot,
+        this.rootPath,
+        this.root.nodeRule,
+        false
+      ) || [defaultFileNodeRule])[0] || defaultFileNodeRule
+    );
   }
 
-  get nodeRulePath(): string | null {
+  get nodeRulePath(): NodeRulePath | null {
     return (findNodeRule(
       this.pathFromRoot,
       this.rootPath,
@@ -83,6 +105,7 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
   }
 
   get template(): t.Program {
+    console.log(this.nodeRule);
     const tmplAst = this.nodeRule({
       parent: this.parent,
       getState: this.getState
@@ -105,12 +128,10 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
     this.flagIsWriting = true;
     const newObj = patternResetAST(this.template, this.matched, false);
     this.ast = newObj as t.Program;
-    console.log(JSON.stringify(this.template));
-    console.log(JSON.stringify(this.ast));
-    console.log(JSON.stringify(this.matched));
+    console.log(JSON.stringify(newObj));
     fs.writeFileSync(
       path.join(this.rootPath, this.pathFromRoot),
-      generate(newObj).code
+      generate(newObj, {}).code
     );
   }
 
@@ -123,10 +144,14 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
     return ast;
   }
 
-  constructor(pathFromRoot: string, parent: PseudoDirectory) {
+  constructor(
+    pathFromRoot: string,
+    parent: PseudoDirectory,
+    stateInterface: StateInterface
+  ) {
     this.type = "file";
     this.parent = parent;
     this.pathFromRoot = pathFromRoot;
-    this.localState = new State();
+    this.stateInterface = stateInterface;
   }
 }

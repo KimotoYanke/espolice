@@ -2,6 +2,7 @@ import * as path from "path";
 import { DirNodeRule, FileNodeRule } from "..";
 import { NodeRule } from "../rule";
 import { isFileNodeRule } from "../rule/file";
+import { NodeRulePath } from "./state";
 
 export type FindNodeRuleReturns<T extends boolean> =
   | [
@@ -27,35 +28,63 @@ export const findNodeRule = <T extends boolean>(
       ? [rootNodeRule, pathFromRoot]
       : null) as (FindNodeRuleReturns<T>);
   }
-  const node: NodeRule | null = splittedPath.reduce<NodeRule | null>(
+  const nodeRuleNodeRulePath:
+    | [NodeRule, NodeRulePath]
+    | null = splittedPath.reduce<[NodeRule, NodeRulePath] | null>(
     (prev, current: string, currentIndex, array) => {
       if (prev === null) {
         return null;
       }
 
-      if (isFileNodeRule(prev)) {
+      const [prevNodeRule, prevPath] = prev;
+      if (isFileNodeRule(prevNodeRule)) {
         return null;
       }
 
       if (currentIndex === array.length - 1) {
         if (isDirNodeRule === true) {
-          return prev.childDirNodes[current] || prev.otherDirNode || null;
+          return (
+            [prevNodeRule.childDirNodes[current], prevPath + "/" + current] || [
+              prevNodeRule.otherDirNode,
+              prevPath + "/*"
+            ] ||
+            null
+          );
         }
         if (isDirNodeRule === false) {
-          return prev.childFileNodes[current] || prev.otherFileNode || null;
+          return (
+            [
+              prevNodeRule.childFileNodes[current],
+              prevPath + "/" + current
+            ] || [prevNodeRule.otherFileNode, prevPath + "/*"] ||
+            null
+          );
         }
         return (
-          prev.childFileNodes[current] ||
-          prev.otherFileNode ||
-          prev.childDirNodes[current] ||
-          prev.otherDirNode ||
+          [prevNodeRule.childFileNodes[current], prevPath + "/" + current] || [
+            prevNodeRule.otherFileNode,
+            prevPath + "/*"
+          ] || [
+            prevNodeRule.childDirNodes[current],
+            prevPath + "/" + current
+          ] || [prevNodeRule.otherDirNode, prevPath + "/*"] ||
           null
         );
       }
 
-      return prev.childDirNodes[current] || prev.otherDirNode || null;
+      return (
+        [prevNodeRule.childDirNodes[current], prevPath + "/" + current] || [
+          prevNodeRule.otherDirNode,
+          prevPath + "/*"
+        ] ||
+        null
+      );
     },
-    rootNodeRule
+    [rootNodeRule, ""]
   );
-  return node as FindNodeRuleReturns<T>;
+  if (!nodeRuleNodeRulePath) {
+    return null;
+  }
+  const [nodeRule, nodeRulePath] = nodeRuleNodeRulePath;
+  return [nodeRule, nodeRulePath] as FindNodeRuleReturns<T>;
 };
