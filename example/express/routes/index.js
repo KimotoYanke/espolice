@@ -1,6 +1,3 @@
-console.log(undefined);
+console.log("aiueo");
 export default (() => {
-  aaaa;
-  bbb;
-  aaa;
 });

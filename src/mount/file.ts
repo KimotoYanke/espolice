@@ -105,7 +105,6 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
   }
 
   get template(): t.Program {
-    console.log(this.nodeRule);
     const tmplAst = this.nodeRule({
       parent: this.parent,
       getState: this.getState
@@ -120,6 +119,12 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
     const matched = patternMatchAST(tmpl, newAst, false);
     if (matched) {
       this.matched = matched;
+      for (const key in matched) {
+        if (!key.match(/^[(one)|(some)|(any)]_\d+$/)) {
+          this.setStateDatum(key, matched[key]);
+          console.log(key, matched[key]);
+        }
+      }
     }
     this.write();
   }
@@ -128,7 +133,6 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
     this.flagIsWriting = true;
     const newObj = patternResetAST(this.template, this.matched, false);
     this.ast = newObj as t.Program;
-    console.log(JSON.stringify(newObj));
     fs.writeFileSync(
       path.join(this.rootPath, this.pathFromRoot),
       generate(newObj, {}).code

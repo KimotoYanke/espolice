@@ -43,42 +43,58 @@ export const findNodeRule = <T extends boolean>(
 
       if (currentIndex === array.length - 1) {
         if (isDirNodeRule === true) {
-          return (
-            [prevNodeRule.childDirNodes[current], prevPath + "/" + current] || [
-              prevNodeRule.otherDirNode,
-              prevPath + "/*"
-            ] ||
-            null
-          );
+          if (prevNodeRule.childDirNodes[current]) {
+            return [
+              prevNodeRule.childDirNodes[current],
+              prevPath + "/" + current
+            ];
+          }
+          if (prevNodeRule.otherDirNode) {
+            return [prevNodeRule.otherDirNode, prevPath + "/*"];
+          }
+          return null;
         }
         if (isDirNodeRule === false) {
-          return (
-            [
+          if (prevNodeRule.childFileNodes[current]) {
+            return [
               prevNodeRule.childFileNodes[current],
               prevPath + "/" + current
-            ] || [prevNodeRule.otherFileNode, prevPath + "/*"] ||
-            null
-          );
+            ];
+          }
+          if (prevNodeRule.otherFileNode) {
+            return [prevNodeRule.otherFileNode, prevPath + "/*"];
+          }
+          return null;
         }
-        return (
-          [prevNodeRule.childFileNodes[current], prevPath + "/" + current] || [
-            prevNodeRule.otherFileNode,
-            prevPath + "/*"
-          ] || [
+        if (prevNodeRule.childFileNodes[current]) {
+          return [
+            prevNodeRule.childFileNodes[current],
+            prevPath + "/" + current
+          ];
+        }
+
+        if (prevNodeRule.otherFileNode) {
+          return [prevNodeRule.otherFileNode, prevPath + "/*"];
+        }
+        if (prevNodeRule.childDirNodes[current]) {
+          return [
             prevNodeRule.childDirNodes[current],
             prevPath + "/" + current
-          ] || [prevNodeRule.otherDirNode, prevPath + "/*"] ||
-          null
-        );
+          ];
+        }
+        if (prevNodeRule.otherDirNode) {
+          return [prevNodeRule.otherDirNode, prevPath + "/*"];
+        }
+        return null;
       }
 
-      return (
-        [prevNodeRule.childDirNodes[current], prevPath + "/" + current] || [
-          prevNodeRule.otherDirNode,
-          prevPath + "/*"
-        ] ||
-        null
-      );
+      if (prevNodeRule.childDirNodes[current]) {
+        return [prevNodeRule.childDirNodes[current], prevPath + "/" + current];
+      }
+      if (prevNodeRule.otherDirNode) {
+        return [prevNodeRule.otherDirNode, prevPath + "/*"];
+      }
+      return null;
     },
     [rootNodeRule, ""]
   );
