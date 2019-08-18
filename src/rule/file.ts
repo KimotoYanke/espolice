@@ -1,5 +1,5 @@
-import { PseudoDirectory } from "../mount/";
 import { NodeRule } from ".";
+import { PseudoDirectory } from "../mount/directory";
 export type FileNodeRule = (args: {
   parent: PseudoDirectory;
   getState: <S extends string>(

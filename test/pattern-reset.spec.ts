@@ -221,6 +221,31 @@ describe("パターンを元に戻す", () => {
           )
         );
       });
+      test("testcase", () => {
+        const tmpl: t.Program = template.program`
+          "@any";
+        `();
+        const matched = {
+          any_0: [
+            {
+              type: "ExpressionStatement",
+              expression: { type: "StringLiteral", value: "a" }
+            }
+          ]
+        };
+
+        expect(patternResetAST(tmpl as t.Node, matched)).toEqual({
+          type: "Program",
+          body: [
+            {
+              type: "ExpressionStatement",
+              expression: { type: "StringLiteral", value: "a" }
+            }
+          ],
+          directives: [],
+          interpreter: null
+        });
+      });
     });
   });
 });

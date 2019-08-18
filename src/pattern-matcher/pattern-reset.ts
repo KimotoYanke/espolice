@@ -5,7 +5,7 @@ import {
   GroupResult,
   defaultOptions
 } from "./matched-list";
-import { Options } from "istanbul-reports";
+import { patternPreprocess } from "./pattern-preprocess";
 
 interface IObject {
   [key: string]: any;
@@ -38,6 +38,8 @@ const patternResetArray = <T extends IObject>(
       obj.push(patternReset(tmplElement, matched, opts));
     }
   }
+
+  if (opts.debug) console.log(`obj:`, obj);
   return obj;
 };
 
@@ -64,10 +66,11 @@ const patternResetObject = <T extends IObject>(
  * @returns 結果
  */
 export const patternReset = (
-  tmpl: any,
+  tmplRaw: any,
   matched: MatchedList,
   opts: Partial<MatchOptions> = defaultOptions
 ): any => {
+  const tmpl = patternPreprocess(tmplRaw, opts);
   const isNode = opts.isNode || defaultOptions.isNode;
   const isGroup = opts.isGroup || defaultOptions.isGroup;
   const isDisorderly = opts.isDisorderly || defaultOptions.isDisorderly;
