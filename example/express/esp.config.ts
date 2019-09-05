@@ -1,8 +1,10 @@
 import { DirNodeRule, dir, mount } from "espolice";
 import { Index, Other } from "./templates";
 
+const OtherDir: DirNodeRule = dir();
 const RootDir: DirNodeRule = dir()
   .haveChildFile(Index, "index.js")
-  .otherChildrenFiles(Other);
+  .otherChildrenFiles(Other)
+  .otherChildrenDirs(OtherDir);
 
 mount(RootDir, "./routes");

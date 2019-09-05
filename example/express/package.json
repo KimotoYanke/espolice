@@ -7,6 +7,7 @@
     "run-esp": "babel-node esp.config.ts --extensions \".ts\""
   },
   "devDependencies": {
+    "@babel/cli": "^7.5.5",
     "@babel/node": "^7.5.5"
   }
 }

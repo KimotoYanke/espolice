@@ -1,7 +1,7 @@
 import * as path from "path";
-import { PseudoDirectory } from "./directory";
+import { PseudoDirectory, addNewDirectory } from "./directory";
 import { NodeRulePath, StateInterface } from "./state";
-import { FileNodeRule } from "..";
+import { FileNodeRule, DirNodeRule } from "..";
 import { findNodeRule } from "./find-node-rule";
 import { toProgram } from "./to-program";
 import { MatchedList } from "../pattern-matcher/matched-list";
@@ -10,6 +10,30 @@ import { fs } from "mz";
 import generate from "@babel/generator";
 import * as t from "@babel/types";
 import { parse } from "@babel/parser";
+import { nodePurify } from "../node/node-purify";
+import { isEqual } from "lodash";
+
+export const addNewFile = (
+  pathFromRoot: string,
+  rootPath: string,
+  rootNodeRule: DirNodeRule,
+  root: PseudoDirectory,
+  stateInterface: StateInterface,
+  opts?: { ignore: string[] }
+): PseudoFile | null => {
+  const parentPathFromRoot = path.resolve(pathFromRoot, "..");
+  const parent =
+    root.findNodeFromThis(parentPathFromRoot) ||
+    addNewDirectory(parentPathFromRoot, rootPath, rootNodeRule, root, opts);
+  if (!parent || parent.type !== "dir") {
+    return null;
+  }
+
+  const file = new PseudoFile(pathFromRoot, parent, stateInterface);
+
+  parent.children.push(file);
+  return file;
+};
 
 export class PseudoFile<StateDataType = { [key in string]: any }> {
   type: "file";
@@ -40,18 +64,6 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
     };
     const setStateData = (key: string, data: any) => {
       this.setStateDatum(key, data);
-      const userPaths: NodeRulePath[] = this.stateInterface.getDatumUsers(key);
-
-      for (const nodeRulePath of userPaths) {
-        const nodes = this.stateInterface.getNodesFromNodeRulePath(
-          nodeRulePath
-        );
-        if (nodes !== null) {
-          nodes.forEach(node => {
-            console.log(node.name);
-          });
-        }
-      }
     };
     return <S extends string>(...keys: S[]) => {
       let result: { [key in S]?: any } = {};
@@ -122,17 +134,21 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
       for (const key in matched) {
         if (!key.match(/^[(one)|(some)|(any)]_\d+$/)) {
           this.setStateDatum(key, matched[key]);
-          console.log(key, matched[key]);
         }
       }
     }
-    this.write();
+    if (!isEqual(matched, this.matched)) {
+      this.write();
+    }
   }
 
   write() {
-    this.flagIsWriting = true;
     const newObj = patternResetAST(this.template, this.matched, false);
+    if (isEqual(newObj, this.ast)) {
+      return;
+    }
     this.ast = newObj as t.Program;
+    this.flagIsWriting = true;
     fs.writeFileSync(
       path.join(this.rootPath, this.pathFromRoot),
       generate(newObj, {}).code
@@ -144,7 +160,7 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
     const ast = parse(code, {
       allowImportExportEverywhere: true
     }).program;
-    this.ast = ast;
+    this.ast = nodePurify(ast);
     return ast;
   }
 

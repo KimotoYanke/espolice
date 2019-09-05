@@ -26,41 +26,64 @@ const readdirAsPseudoDirectory = (
   );
   const nodes = fs
     .readdirSync(path.resolve(rootPath, pathFromRoot))
-    .map(
-      (childName: string): PseudoNode | null => {
-        const newPathFromRoot = path.join(pathFromRoot, childName);
-        if (opts && opts.ignore.includes(newPathFromRoot)) {
-          return null;
-        }
-        if (
-          fs.statSync(path.resolve(rootPath, newPathFromRoot)).isDirectory()
-        ) {
-          const result = readdirAsPseudoDirectory(
-            newPathFromRoot,
-            rootPath,
-            dir,
-            rootNodeRule,
-            stateInterface,
-            opts
-          );
-
-          return result;
-        }
-
-        const result: PseudoFile = new PseudoFile(
+    .map((childName: string): PseudoNode | null => {
+      const newPathFromRoot = path.join(pathFromRoot, childName);
+      if (opts && opts.ignore.includes(newPathFromRoot)) {
+        return null;
+      }
+      if (fs.statSync(path.resolve(rootPath, newPathFromRoot)).isDirectory()) {
+        const result = readdirAsPseudoDirectory(
           newPathFromRoot,
+          rootPath,
           dir,
-          stateInterface
+          rootNodeRule,
+          stateInterface,
+          opts
         );
+
         return result;
       }
-    )
+
+      const result: PseudoFile = new PseudoFile(
+        newPathFromRoot,
+        dir,
+        stateInterface
+      );
+      return result;
+    })
     .filter(notNull);
 
   dir.children = nodes.map(node => {
     node.parent = dir;
     return node;
   });
+  return dir;
+};
+
+export const addNewDirectory = (
+  pathFromRoot: string,
+  rootPath: string,
+  rootNodeRule: DirNodeRule,
+  root: PseudoDirectory,
+  opts?: { ignore: string[] }
+): PseudoDirectory | null => {
+  const parentPathFromRoot = path.resolve(pathFromRoot, "..");
+  const parent =
+    root.findNodeFromThis(parentPathFromRoot) ||
+    addNewDirectory(parentPathFromRoot, rootPath, rootNodeRule, root, opts);
+  if (!parent || parent.type !== "dir") {
+    return null;
+  }
+
+  const dir = new PseudoDirectory(
+    pathFromRoot,
+    parent,
+    rootNodeRule,
+    rootPath,
+    rootNodeRule
+  );
+
+  parent.children.push(dir);
   return dir;
 };
 
@@ -71,6 +94,16 @@ export class PseudoDirectory<StateDataType = { [key in string]: any }> {
   }
   pathFromRoot: string;
   children: (PseudoNode)[] = [];
+  get childrenFiles(): string[] {
+    return this.children
+      .filter((n: PseudoNode): n is PseudoFile => n.type === "file")
+      .map(n => path.basename(n.pathFromRoot));
+  }
+  get childrenDirs(): string[] {
+    return this.children
+      .filter((n: PseudoNode): n is PseudoFile => n.type === "dir")
+      .map(n => path.basename(n.pathFromRoot));
+  }
   stateData: StateDataType;
   parent: PseudoDirectory | null;
   rootNodeRule: DirNodeRule;
@@ -119,6 +152,30 @@ export class PseudoDirectory<StateDataType = { [key in string]: any }> {
     return null;
   }
 
+  write() {
+    for (const dirName of Object.keys(this.nodeRule.childDirNodes)) {
+      const directoryFullPath = path.join(
+        this.rootPath,
+        this.pathFromRoot,
+        dirName
+      );
+      if (!fs.statSync(directoryFullPath).isDirectory()) {
+        fs.mkdirSync(directoryFullPath);
+      }
+    }
+
+    for (const fileName of Object.keys(this.nodeRule.childFileNodes)) {
+      const fileFullPath = path.join(
+        this.rootPath,
+        this.pathFromRoot,
+        fileName
+      );
+      if (!fs.statSync(fileFullPath).isFile()) {
+        fs.writeFileSync(fileFullPath, "");
+      }
+    }
+  }
+
   localState: State;
 
   get root(): PseudoDirectory {
@@ -154,7 +211,8 @@ export class PseudoDirectory<StateDataType = { [key in string]: any }> {
 export const getRootDirectory = (
   rootPath: string,
   rootNodeRule: DirNodeRule,
-  stateInterface: StateInterface
+  stateInterface: StateInterface,
+  opts?: { ignore: string[] }
 ) => {
   const root: PseudoDirectory = readdirAsPseudoDirectory(
     ".",
@@ -162,9 +220,7 @@ export const getRootDirectory = (
     null,
     rootNodeRule,
     stateInterface,
-    {
-      ignore: ["node_modules", ".git"]
-    }
+    opts
   );
   return root;
 };

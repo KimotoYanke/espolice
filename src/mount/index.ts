@@ -2,12 +2,21 @@ import * as chokidar from "chokidar";
 import { DirNodeRule } from "../rule/dir";
 import * as path from "path";
 import { State, NodeRulePath, StateInterface } from "./state";
-import { PseudoDirectory, getRootDirectory } from "./directory";
+import {
+  PseudoDirectory,
+  getRootDirectory,
+  addNewDirectory
+} from "./directory";
 import { findNodeRule } from "./find-node-rule";
-import { PseudoFile } from "./file";
+import { PseudoFile, addNewFile } from "./file";
 import { FileNodeRule } from "..";
+import { isEqual } from "lodash";
 
 export type PseudoNode = PseudoDirectory | PseudoFile;
+
+const opts = {
+  ignore: ["node_modules", ".gitignore"]
+};
 
 type Options = {
   loserMode: boolean;
@@ -24,68 +33,111 @@ export const mount = <RS extends State>(
   });
 
   const nodeRulePathToNodesDict: {
-    [key in NodeRulePath]: Set<PseudoFile> | undefined
+    [key in NodeRulePath]: Set<PseudoFile> | undefined;
   } = {};
   const state: State = new State();
 
-  const stateInterface: StateInterface = {
-    getStateDatum(key: string) {
-      return state.data[key] || undefined;
-    },
-    setStateDatum(key: string, datum: any) {
-      state.data[key] = datum;
-    },
-    addDatumUser(key: string, nodeRulePath: NodeRulePath) {
-      if (state.datumUser[key]) {
-        state.datumUser[key].push(nodeRulePath);
-      } else {
-        state.datumUser[key] = [nodeRulePath];
+  const getStateDatum = (key: string) => {
+    return state.data[key] || undefined;
+  };
+  const setStateDatum = (key: string, datum: any) => {
+    if (isEqual(state.data[key], datum)) {
+      console.log("isEqual");
+      return;
+    }
+    console.log("not isEqual");
+    state.data[key] = datum;
+    const userPaths = getDatumUsers(key);
+
+    userPaths.forEach(nodeRulePath => {
+      console.log("write from state change: ", userPaths);
+      const nodes = getNodesFromNodeRulePath(nodeRulePath);
+      if (nodes !== null) {
+        nodes.forEach(node => {
+          node.writeForNewAst(node.read());
+        });
       }
-    },
-    getDatumUsers(key: string) {
-      return state.datumUser[key] || [];
-    },
-    getNodesFromNodeRulePath(nodeRulePath: NodeRulePath) {
-      return nodeRulePathToNodesDict[nodeRulePath] || null;
+    });
+  };
+  const addDatumUser = (key: string, nodeRulePath: NodeRulePath) => {
+    if (!state.datumUser[key]) {
+      state.datumUser[key] = new Set([nodeRulePath]);
+    } else {
+      state.datumUser[key].add(nodeRulePath);
     }
   };
+  const getDatumUsers = (key: string) => {
+    return state.datumUser[key] || new Set([]);
+  };
+  const getNodesFromNodeRulePath = (nodeRulePath: NodeRulePath) => {
+    return nodeRulePathToNodesDict[nodeRulePath] || null;
+  };
 
-  const root = getRootDirectory(rootPath, rootNodeRule, stateInterface);
+  const stateInterface: StateInterface = {
+    getStateDatum,
+    setStateDatum,
+    addDatumUser,
+    getDatumUsers,
+    getNodesFromNodeRulePath
+  };
+
+  const root = getRootDirectory(rootPath, rootNodeRule, stateInterface, opts);
   root.pathFromRoot = ".";
 
   watcher.on("all", (event, p, stats) => {
     const pathFromRoot = path.relative(path.resolve(rootPath), path.resolve(p));
-    const thisNode = root.findNodeFromThis(pathFromRoot);
     const thisNodeRule = findNodeRule(pathFromRoot, rootPath, rootNodeRule);
     if (!thisNodeRule) {
-      return;
-    }
-    if (thisNode && thisNode.type === "file" && thisNode.flagIsWriting) {
-      thisNode.flagIsWriting = false;
       return;
     }
     switch (event) {
       case "add":
       case "change":
+        const thisFileNode =
+          root.findNodeFromThis(pathFromRoot) ||
+          addNewFile(
+            pathFromRoot,
+            rootPath,
+            rootNodeRule,
+            root,
+            stateInterface,
+            opts
+          );
+        if (
+          thisFileNode &&
+          thisFileNode.type === "file" &&
+          thisFileNode.flagIsWriting
+        ) {
+          thisFileNode.flagIsWriting = false;
+          return;
+        }
+
         console.log("add or change");
-        if (thisNode && thisNode.type === "file") {
-          console.log(thisNode.nodeRulePath);
-          if (thisNode.nodeRulePath) {
-            if (!nodeRulePathToNodesDict[thisNode.nodeRulePath]) {
-              nodeRulePathToNodesDict[thisNode.nodeRulePath] = new Set();
+        if (thisFileNode && thisFileNode.type === "file") {
+          if (thisFileNode.nodeRulePath) {
+            if (!nodeRulePathToNodesDict[thisFileNode.nodeRulePath]) {
+              nodeRulePathToNodesDict[thisFileNode.nodeRulePath] = new Set();
             }
-            if (nodeRulePathToNodesDict[thisNode.nodeRulePath]) {
+            if (nodeRulePathToNodesDict[thisFileNode.nodeRulePath]) {
               (
-                nodeRulePathToNodesDict[thisNode.nodeRulePath] || {
+                nodeRulePathToNodesDict[thisFileNode.nodeRulePath] || {
                   add: (_: PseudoFile) => {}
                 }
-              ).add(thisNode);
+              ).add(thisFileNode);
             }
           }
-          thisNode.writeForNewAst(thisNode.read());
+          thisFileNode.writeForNewAst(thisFileNode.read());
         }
         break;
       case "addDir":
+        console.log("addDir");
+        const thisDirNode = addNewDirectory(
+          pathFromRoot,
+          rootPath,
+          rootNodeRule,
+          root,
+          opts
+        );
         /*if (isDirNodeRule(thisNodeRule)) {
           thisNodeRule.childDirNodes;
         }*/
