@@ -15,20 +15,28 @@ export const Index: FileNodeRule = ({ getState, getParent }) => {
   const result = $quasiquote => {
     console.log("moduleName = @one");
 
+    // @unquote-splicing
+    parent.childrenFiles
+      .filter(childrenFile => childrenFile !== "index.js")
+      .reduce(
+        (prev, childrenFile) => [
+          ...prev,
+          //@ts-ignore
+          ...$quasiquote => {
+            //@ts-ignore
+            register(
+              require(//@literal
+              childrenFile)
+            );
+          }
+        ],
+        []
+      );
+
     //@ts-ignore
     export default () => {
       "@any";
     };
-
-    // @unquote-splicing
-    parent.childrenFiles
-      .filter(childrenFile => childrenFile !== "index.js")
-      .map(childrenFile => $quasiquote =>
-        console.log(
-          //@literal
-          childrenFile
-        )
-      );
   };
   return result;
 };
