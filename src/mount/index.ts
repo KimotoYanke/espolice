@@ -11,6 +11,8 @@ import { findNodeRule } from "./find-node-rule";
 import { PseudoFile, addNewFile } from "./file";
 import { FileNodeRule } from "..";
 import { isEqual } from "lodash";
+import { fs } from "mz";
+import { mkdirpSync } from "./util";
 
 export type PseudoNode = PseudoDirectory | PseudoFile;
 
@@ -27,6 +29,7 @@ export const mount = <RS extends State>(
   rootPath: string,
   options?: Partial<Options>
 ) => {
+  mkdirpSync(rootPath);
   const watcher = chokidar.watch(rootPath, {
     persistent: true,
     ignoreInitial: false
@@ -81,6 +84,7 @@ export const mount = <RS extends State>(
 
   const root = getRootDirectory(rootPath, rootNodeRule, stateInterface, opts);
   root.pathFromRoot = ".";
+  root.write();
 
   watcher.on("all", (event, p, stats) => {
     const pathFromRoot = path.relative(path.resolve(rootPath), path.resolve(p));

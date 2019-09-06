@@ -5,6 +5,7 @@ import * as path from "path";
 import { findNodeRule } from "./find-node-rule";
 import { fs } from "mz";
 import { PseudoFile } from "./file";
+import { mkdirpSync, isFileExistSync } from "./util";
 
 const readdirAsPseudoDirectory = (
   pathFromRoot: string,
@@ -161,36 +162,35 @@ export class PseudoDirectory<StateDataType = { [key in string]: any }> {
   }
 
   write() {
+    const thisFullpath = path.join(this.rootPath, this.pathFromRoot);
+    mkdirpSync(thisFullpath);
+    console.log(this.nodeRule.childDirNodes);
+    console.log(this.nodeRule.childFileNodes);
     for (const dirName of Object.keys(this.nodeRule.childDirNodes)) {
-      const directoryFullPath = path.join(
+      const directoryFullPath = path.resolve(
         this.rootPath,
         this.pathFromRoot,
         dirName
       );
-      if (!fs.statSync(directoryFullPath).isDirectory()) {
-        fs.mkdirSync(directoryFullPath);
-      }
+      mkdirpSync(directoryFullPath);
     }
 
     for (const fileName of Object.keys(this.nodeRule.childFileNodes)) {
-      const fileFullPath = path.join(
+      const fileFullPath = path.resolve(
         this.rootPath,
         this.pathFromRoot,
         fileName
       );
-      if (!fs.statSync(fileFullPath).isFile()) {
+      console.log(path.normalize(fileFullPath));
+      if (!isFileExistSync(fileFullPath)) {
         fs.writeFileSync(fileFullPath, "");
       }
     }
   }
 
   syncDependents() {
-    console.log("syncd");
-    console.log(this.dependentFiles);
     for (let i = 0; i < this.dependentFiles.length; i++) {}
     for (const file of this.dependentFiles) {
-      console.log("syncd - ");
-      console.log(file.name);
       file.flagIsWriting = true;
       file.sync();
     }
