@@ -1,4 +1,8 @@
-console.log();
-export default (() => {
-});
+console.log("routes");
+export default () => {};
 console.log("a.js");
+console.log("b.js");
+console.log("c.js");
+console.log("d.js");
+console.log("k.js");
+console.log("e.js");

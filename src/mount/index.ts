@@ -42,10 +42,8 @@ export const mount = <RS extends State>(
   };
   const setStateDatum = (key: string, datum: any) => {
     if (isEqual(state.data[key], datum)) {
-      console.log("isEqual");
       return;
     }
-    console.log("not isEqual");
     state.data[key] = datum;
     const userPaths = getDatumUsers(key);
 
@@ -54,7 +52,7 @@ export const mount = <RS extends State>(
       const nodes = getNodesFromNodeRulePath(nodeRulePath);
       if (nodes !== null) {
         nodes.forEach(node => {
-          node.writeForNewAst(node.read());
+          node.sync();
         });
       }
     });
@@ -108,12 +106,16 @@ export const mount = <RS extends State>(
           thisFileNode.type === "file" &&
           thisFileNode.flagIsWriting
         ) {
+          console.log("flagIsWriting");
           thisFileNode.flagIsWriting = false;
           return;
         }
 
         console.log("add or change");
         if (thisFileNode && thisFileNode.type === "file") {
+          if (event === "add") {
+            thisFileNode.parent.syncDependents();
+          }
           if (thisFileNode.nodeRulePath) {
             if (!nodeRulePathToNodesDict[thisFileNode.nodeRulePath]) {
               nodeRulePathToNodesDict[thisFileNode.nodeRulePath] = new Set();

@@ -1,6 +1,6 @@
 //@ts-nocheck
 import { FileNodeRule } from "espolice";
-export const Other: FileNodeRule = ({ getState, parent }) => {
+export const Other: FileNodeRule = ({ getState, getParent }) => {
   const { moduleName } = getState("moduleName");
   return $quasiquote => {
     console.log(
@@ -9,9 +9,9 @@ export const Other: FileNodeRule = ({ getState, parent }) => {
     );
   };
 };
-export const Index: FileNodeRule = ({ getState, parent }) => {
+export const Index: FileNodeRule = ({ getState, getParent }) => {
   const { moduleName } = getState("moduleName");
-  console.log(parent.childrenFiles);
+  const parent = getParent();
   const result = $quasiquote => {
     console.log("moduleName = @one");
 
@@ -30,6 +30,5 @@ export const Index: FileNodeRule = ({ getState, parent }) => {
         )
       );
   };
-  console.log(result);
   return result;
 };

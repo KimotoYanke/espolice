@@ -52,6 +52,7 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
   get setStateDatum() {
     return this.stateInterface.setStateDatum;
   }
+
   addDatumUser(key: string) {
     if (this.nodeRulePath) {
       this.stateInterface.addDatumUser(key, this.nodeRulePath);
@@ -80,6 +81,13 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
         };
       }
       return result as { [key in S]: any };
+    };
+  }
+
+  get getParent(): () => PseudoDirectory {
+    return () => {
+      this.parent.addDependentFile(this);
+      return this.parent;
     };
   }
 
@@ -118,7 +126,7 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
 
   get template(): t.Program {
     const tmplAst = this.nodeRule({
-      parent: this.parent,
+      getParent: this.getParent,
       getState: this.getState
     });
     const tmpl = toProgram(tmplAst);
@@ -162,6 +170,10 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
     }).program;
     this.ast = nodePurify(ast);
     return ast;
+  }
+
+  sync() {
+    this.writeForNewAst(this.read());
   }
 
   constructor(

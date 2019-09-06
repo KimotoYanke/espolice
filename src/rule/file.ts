@@ -1,7 +1,7 @@
 import { NodeRule } from ".";
 import { PseudoDirectory } from "../mount/directory";
 export type FileNodeRule = (args: {
-  parent: PseudoDirectory;
+  getParent: () => PseudoDirectory;
   getState: <S extends string>(...args: S[]) => { [key in S]: any };
 }) => object;
 

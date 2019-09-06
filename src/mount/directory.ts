@@ -126,6 +126,14 @@ export class PseudoDirectory<StateDataType = { [key in string]: any }> {
     ) || [, null])[1];
   }
 
+  get dependentFiles(): PseudoFile[] {
+    return Object.values(this.mapDependentFiles);
+  }
+  mapDependentFiles: { [keyof in string]: PseudoFile } = {};
+  addDependentFile(file: PseudoFile) {
+    this.mapDependentFiles[file.pathFromRoot] = file;
+  }
+
   findNodeFromThis(pathFromThis: string | string[]): PseudoNode | null {
     const [childPath, ...splittedPathFromChild] =
       pathFromThis instanceof Array
@@ -173,6 +181,18 @@ export class PseudoDirectory<StateDataType = { [key in string]: any }> {
       if (!fs.statSync(fileFullPath).isFile()) {
         fs.writeFileSync(fileFullPath, "");
       }
+    }
+  }
+
+  syncDependents() {
+    console.log("syncd");
+    console.log(this.dependentFiles);
+    for (let i = 0; i < this.dependentFiles.length; i++) {}
+    for (const file of this.dependentFiles) {
+      console.log("syncd - ");
+      console.log(file.name);
+      file.flagIsWriting = true;
+      file.sync();
     }
   }
 
