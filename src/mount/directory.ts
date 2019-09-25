@@ -108,6 +108,7 @@ export class PseudoDirectory<StateDataType = { [key in string]: any }> {
   stateData: StateDataType;
   parent: PseudoDirectory | null;
   rootNodeRule: DirNodeRule;
+  isWriting: boolean = false;
 
   get nodeRule(): DirNodeRule {
     return (findNodeRule(
@@ -191,6 +192,7 @@ export class PseudoDirectory<StateDataType = { [key in string]: any }> {
   syncDependents() {
     for (let i = 0; i < this.dependentFiles.length; i++) {}
     for (const file of this.dependentFiles) {
+      console.log(file);
       file.flagIsWriting = true;
       file.sync();
     }

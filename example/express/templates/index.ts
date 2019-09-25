@@ -1,7 +1,10 @@
 //@ts-nocheck
 import { FileNodeRule } from "espolice";
-export const Other: FileNodeRule = ({ getState, getParent }) => {
-  const { moduleName } = getState("moduleName");
+export const Other: FileNodeRule = ({ getState, getParent, getPath }) => {
+  const parent = getParent();
+  console.log(parent.pathFromRoot);
+  const stateDatumKey = "[" + parent.pathFromRoot + "]moduleName";
+  const { moduleName } = getState(stateDatumKey);
   return $quasiquote => {
     console.log(
       //@unquote
@@ -10,10 +13,15 @@ export const Other: FileNodeRule = ({ getState, getParent }) => {
   };
 };
 export const Index: FileNodeRule = ({ getState, getParent }) => {
-  const { moduleName } = getState("moduleName");
   const parent = getParent();
+  console.log(parent.pathFromRoot);
+  const stateDatumKey = "[" + parent.pathFromRoot + "]moduleName";
+  const { moduleName } = getState(stateDatumKey);
   const result = $quasiquote => {
-    console.log("moduleName = @one");
+    console.log(
+      //@literal
+      stateDatumKey + " = @one"
+    );
 
     // @unquote-splicing
     parent.childrenFiles
@@ -26,7 +34,7 @@ export const Index: FileNodeRule = ({ getState, getParent }) => {
             //@ts-ignore
             register(
               require(//@literal
-              childrenFile)
+              "./" + childrenFile)
             );
           }
         ],

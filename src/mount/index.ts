@@ -13,6 +13,7 @@ import { FileNodeRule } from "..";
 import { isEqual } from "lodash";
 import { fs } from "mz";
 import { mkdirpSync } from "./util";
+import { eventLog } from "../cli";
 
 export type PseudoNode = PseudoDirectory | PseudoFile;
 
@@ -41,6 +42,7 @@ export const mount = <RS extends State>(
   const state: State = new State();
 
   const getStateDatum = (key: string) => {
+    console.log(key + " is requested");
     return state.data[key] || undefined;
   };
   const setStateDatum = (key: string, datum: any) => {
@@ -51,7 +53,12 @@ export const mount = <RS extends State>(
     const userPaths = getDatumUsers(key);
 
     userPaths.forEach(nodeRulePath => {
-      console.log("write from state change: ", userPaths);
+      console.log("write from state change: ", {
+        nodeRulePath,
+        userPaths,
+        key,
+        datum
+      });
       const nodes = getNodesFromNodeRulePath(nodeRulePath);
       if (nodes !== null) {
         nodes.forEach(node => {
@@ -95,6 +102,7 @@ export const mount = <RS extends State>(
     switch (event) {
       case "add":
       case "change":
+        console.log("findNodeFromThis", root.findNodeFromThis(pathFromRoot));
         const thisFileNode =
           root.findNodeFromThis(pathFromRoot) ||
           addNewFile(
@@ -110,14 +118,14 @@ export const mount = <RS extends State>(
           thisFileNode.type === "file" &&
           thisFileNode.flagIsWriting
         ) {
-          console.log("flagIsWriting");
           thisFileNode.flagIsWriting = false;
           return;
         }
 
-        console.log("add or change");
+        eventLog("FILE Add or Change", pathFromRoot);
         if (thisFileNode && thisFileNode.type === "file") {
-          if (event === "add") {
+          console.log("parent path", thisFileNode.parent.pathFromRoot);
+          if (event === "add" && !thisFileNode.parent.isWriting) {
             thisFileNode.parent.syncDependents();
           }
           if (thisFileNode.nodeRulePath) {
@@ -136,7 +144,7 @@ export const mount = <RS extends State>(
         }
         break;
       case "addDir":
-        console.log("addDir");
+        eventLog("DIR Add", pathFromRoot);
         const thisDirNode = addNewDirectory(
           pathFromRoot,
           rootPath,
@@ -144,6 +152,12 @@ export const mount = <RS extends State>(
           root,
           opts
         );
+
+        if (thisDirNode) {
+          thisDirNode.isWriting = true;
+          thisDirNode.write();
+          thisDirNode.isWriting = false;
+        }
         /*if (isDirNodeRule(thisNodeRule)) {
           thisNodeRule.childDirNodes;
         }*/

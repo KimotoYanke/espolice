@@ -9,7 +9,7 @@ import { nodePurify } from "./node-purify";
 const parseGroupString = (
   str: string
 ): { key: string; cmd: string } | false => {
-  const matched = str.trim().match(/^(?:(\w+)\s*=)?\s*@(\w+)$/);
+  const matched = str.trim().match(/^(?:([^=\s@]+)\s*=)?\s*@(\w+)$/);
   if (!matched) {
     return false;
   }

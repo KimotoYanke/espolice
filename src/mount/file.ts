@@ -21,7 +21,8 @@ export const addNewFile = (
   stateInterface: StateInterface,
   opts?: { ignore: string[] }
 ): PseudoFile | null => {
-  const parentPathFromRoot = path.resolve(pathFromRoot, "..");
+  const parentPathFromRoot = path.dirname(pathFromRoot);
+  console.log("parentPathFromRoot", parentPathFromRoot);
   const parent =
     root.findNodeFromThis(parentPathFromRoot) ||
     addNewDirectory(parentPathFromRoot, rootPath, rootNodeRule, root, opts);
@@ -127,7 +128,8 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
   get template(): t.Program {
     const tmplAst = this.nodeRule({
       getParent: this.getParent,
-      getState: this.getState
+      getState: this.getState,
+      getPath: () => this.pathFromRoot
     });
     const tmpl = toProgram(tmplAst);
     return tmpl;

@@ -1,7 +1,4 @@
-console.log("routes");
-register(require("a.js"));
-register(require("b.js"));
-register(require("c.js"));
+console.log();
+register(require("./a.js"));
 export default (() => {
-  return;
 });
