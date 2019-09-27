@@ -7,11 +7,12 @@ import { toProgram } from "./to-program";
 import { MatchedList } from "../pattern-matcher/matched-list";
 import { patternMatchAST, patternResetAST } from "../pattern-matcher";
 import { fs } from "mz";
-import generate from "@babel/generator";
+import generate, { GeneratorOptions } from "@babel/generator";
 import * as t from "@babel/types";
 import { parse } from "@babel/parser";
 import { nodePurify } from "../node/node-purify";
 import { isEqual } from "lodash";
+import { isFileExistSync } from "./util";
 
 export const addNewFile = (
   pathFromRoot: string,
@@ -58,6 +59,9 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
     if (this.nodeRulePath) {
       this.stateInterface.addDatumUser(key, this.nodeRulePath);
     }
+  }
+  get allStateData() {
+    return this.stateInterface.getAllStateData();
   }
 
   get getState(): <S extends string>(...args: S[]) => { [key in S]: any } {
@@ -139,21 +143,36 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
   writeForNewAst(newAst: t.Node) {
     const tmpl = this.template;
     const matched = patternMatchAST(tmpl, newAst, false);
+    console.log({ matched });
     if (matched) {
       this.matched = matched;
       for (const key in matched) {
-        if (!key.match(/^[(one)|(some)|(any)]_\d+$/)) {
+        if (!key.match(/^((one)|(some)|(any))_\d+$/)) {
           this.setStateDatum(key, matched[key]);
         }
       }
     }
-    if (!isEqual(matched, this.matched)) {
-      this.write();
-    }
+    this.write();
   }
 
   write() {
-    const newObj = patternResetAST(this.template, this.matched, false);
+    const newObj = patternResetAST(this.template, { ...this.matched }, false);
+    console.log("[.]moduleName", this.getState("[.]moduleName"));
+    console.log("matching", { ...this.matched, ...this.allStateData });
+    console.log("newObj", JSON.stringify(newObj));
+    console.log(
+      "newObjCode",
+      generate(newObj, { jsonCompatibleStrings: true }).code
+    );
+    const generateWithOpts = (obj: t.Program, newOptions: GeneratorOptions) => {
+      const options: GeneratorOptions = {
+        jsonCompatibleStrings: true
+      };
+      options.jsescOption = {};
+      // @ts-ignore
+      options.jsescOption["minimal"] = true;
+      return generate(obj, { ...options, ...newOptions });
+    };
     if (isEqual(newObj, this.ast)) {
       return;
     }
@@ -161,11 +180,14 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
     this.flagIsWriting = true;
     fs.writeFileSync(
       path.join(this.rootPath, this.pathFromRoot),
-      generate(newObj, {}).code
+      generateWithOpts(newObj, { jsonCompatibleStrings: true }).code
     );
   }
 
   read() {
+    if (!(fs.existsSync(this.path) && isFileExistSync(this.path))) {
+      return null;
+    }
     const code = fs.readFileSync(this.path).toString();
     const ast = parse(code, {
       allowImportExportEverywhere: true
@@ -175,7 +197,14 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
   }
 
   sync() {
-    this.writeForNewAst(this.read());
+    console.log("sync for", this.pathFromRoot);
+    console.log(this.read());
+    const readAst = this.read();
+
+    if (!readAst) {
+      return;
+    }
+    this.writeForNewAst(readAst);
   }
 
   constructor(

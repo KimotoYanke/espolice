@@ -42,7 +42,6 @@ export const mount = <RS extends State>(
   const state: State = new State();
 
   const getStateDatum = (key: string) => {
-    console.log(key + " is requested");
     return state.data[key] || undefined;
   };
   const setStateDatum = (key: string, datum: any) => {
@@ -53,12 +52,6 @@ export const mount = <RS extends State>(
     const userPaths = getDatumUsers(key);
 
     userPaths.forEach(nodeRulePath => {
-      console.log("write from state change: ", {
-        nodeRulePath,
-        userPaths,
-        key,
-        datum
-      });
       const nodes = getNodesFromNodeRulePath(nodeRulePath);
       if (nodes !== null) {
         nodes.forEach(node => {
@@ -77,8 +70,16 @@ export const mount = <RS extends State>(
   const getDatumUsers = (key: string) => {
     return state.datumUser[key] || new Set([]);
   };
+  const removeDatumUser = (nodeRulePath: NodeRulePath) => {
+    for (let key in state.datumUser) {
+      state.datumUser[key].delete(nodeRulePath);
+    }
+  };
   const getNodesFromNodeRulePath = (nodeRulePath: NodeRulePath) => {
     return nodeRulePathToNodesDict[nodeRulePath] || null;
+  };
+  const getAllStateData = () => {
+    return state.data;
   };
 
   const stateInterface: StateInterface = {
@@ -86,7 +87,9 @@ export const mount = <RS extends State>(
     setStateDatum,
     addDatumUser,
     getDatumUsers,
-    getNodesFromNodeRulePath
+    removeDatumUser,
+    getNodesFromNodeRulePath,
+    getAllStateData
   };
 
   const root = getRootDirectory(rootPath, rootNodeRule, stateInterface, opts);
@@ -102,7 +105,70 @@ export const mount = <RS extends State>(
     switch (event) {
       case "add":
       case "change":
-        console.log("findNodeFromThis", root.findNodeFromThis(pathFromRoot));
+        {
+          eventLog("FILE Add or Change", pathFromRoot);
+          const thisFileNode =
+            root.findNodeFromThis(pathFromRoot) ||
+            addNewFile(
+              pathFromRoot,
+              rootPath,
+              rootNodeRule,
+              root,
+              stateInterface,
+              opts
+            );
+          if (
+            thisFileNode &&
+            thisFileNode.type === "file" &&
+            thisFileNode.flagIsWriting
+          ) {
+            thisFileNode.flagIsWriting = false;
+            return;
+          }
+
+          if (thisFileNode && thisFileNode.type === "file") {
+            if (event === "add" && !thisFileNode.parent.isWriting) {
+              thisFileNode.parent.syncDependents();
+            }
+            if (thisFileNode.nodeRulePath) {
+              if (!nodeRulePathToNodesDict[thisFileNode.nodeRulePath]) {
+                nodeRulePathToNodesDict[thisFileNode.nodeRulePath] = new Set();
+              }
+              if (nodeRulePathToNodesDict[thisFileNode.nodeRulePath]) {
+                (
+                  nodeRulePathToNodesDict[thisFileNode.nodeRulePath] || {
+                    add: (_: PseudoFile) => {}
+                  }
+                ).add(thisFileNode);
+              }
+            }
+            thisFileNode.sync();
+          }
+        }
+        break;
+      case "addDir":
+        {
+          eventLog("DIR Added", pathFromRoot);
+          const thisDirNode = addNewDirectory(
+            pathFromRoot,
+            rootPath,
+            rootNodeRule,
+            root,
+            opts
+          );
+
+          if (thisDirNode) {
+            thisDirNode.isWriting = true;
+            thisDirNode.write();
+            thisDirNode.isWriting = false;
+          }
+          /*if (isDirNodeRule(thisNodeRule)) {
+          thisNodeRule.childDirNodes;
+        }*/
+        }
+        break;
+      case "unlink": {
+        eventLog("FILE Removed", pathFromRoot);
         const thisFileNode =
           root.findNodeFromThis(pathFromRoot) ||
           addNewFile(
@@ -113,55 +179,28 @@ export const mount = <RS extends State>(
             stateInterface,
             opts
           );
-        if (
-          thisFileNode &&
-          thisFileNode.type === "file" &&
-          thisFileNode.flagIsWriting
-        ) {
-          thisFileNode.flagIsWriting = false;
-          return;
-        }
 
-        eventLog("FILE Add or Change", pathFromRoot);
-        if (thisFileNode && thisFileNode.type === "file") {
-          console.log("parent path", thisFileNode.parent.pathFromRoot);
-          if (event === "add" && !thisFileNode.parent.isWriting) {
-            thisFileNode.parent.syncDependents();
-          }
-          if (thisFileNode.nodeRulePath) {
-            if (!nodeRulePathToNodesDict[thisFileNode.nodeRulePath]) {
-              nodeRulePathToNodesDict[thisFileNode.nodeRulePath] = new Set();
+        if (thisFileNode) {
+          const parent = thisFileNode.parent;
+          if (parent) {
+            const foundIndex = parent.children.findIndex(node => {
+              node.type === "file" &&
+                node.pathFromRoot === thisFileNode.pathFromRoot;
+            });
+            parent.children.splice(foundIndex, 1);
+            if (thisFileNode.nodeRulePath) {
+              stateInterface.removeDatumUser(thisFileNode.nodeRulePath);
             }
-            if (nodeRulePathToNodesDict[thisFileNode.nodeRulePath]) {
-              (
-                nodeRulePathToNodesDict[thisFileNode.nodeRulePath] || {
-                  add: (_: PseudoFile) => {}
-                }
-              ).add(thisFileNode);
-            }
+
+            console.log("childrenFiles", parent.childrenFiles);
+            parent.isWriting = true;
+            parent.write();
+            parent.syncDependents();
+            parent.isWriting = false;
           }
-          thisFileNode.writeForNewAst(thisFileNode.read());
         }
         break;
-      case "addDir":
-        eventLog("DIR Add", pathFromRoot);
-        const thisDirNode = addNewDirectory(
-          pathFromRoot,
-          rootPath,
-          rootNodeRule,
-          root,
-          opts
-        );
-
-        if (thisDirNode) {
-          thisDirNode.isWriting = true;
-          thisDirNode.write();
-          thisDirNode.isWriting = false;
-        }
-        /*if (isDirNodeRule(thisNodeRule)) {
-          thisNodeRule.childDirNodes;
-        }*/
-        break;
+      }
     }
   });
 };

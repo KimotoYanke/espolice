@@ -137,6 +137,9 @@ export class PseudoDirectory<StateDataType = { [key in string]: any }> {
   }
 
   findNodeFromThis(pathFromThis: string | string[]): PseudoNode | null {
+    if (pathFromThis === ".") {
+      return this;
+    }
     const [childPath, ...splittedPathFromChild] =
       pathFromThis instanceof Array
         ? pathFromThis
@@ -165,8 +168,6 @@ export class PseudoDirectory<StateDataType = { [key in string]: any }> {
   write() {
     const thisFullpath = path.join(this.rootPath, this.pathFromRoot);
     mkdirpSync(thisFullpath);
-    console.log(this.nodeRule.childDirNodes);
-    console.log(this.nodeRule.childFileNodes);
     for (const dirName of Object.keys(this.nodeRule.childDirNodes)) {
       const directoryFullPath = path.resolve(
         this.rootPath,
@@ -182,7 +183,6 @@ export class PseudoDirectory<StateDataType = { [key in string]: any }> {
         this.pathFromRoot,
         fileName
       );
-      console.log(path.normalize(fileFullPath));
       if (!isFileExistSync(fileFullPath)) {
         fs.writeFileSync(fileFullPath, "");
       }
@@ -192,7 +192,6 @@ export class PseudoDirectory<StateDataType = { [key in string]: any }> {
   syncDependents() {
     for (let i = 0; i < this.dependentFiles.length; i++) {}
     for (const file of this.dependentFiles) {
-      console.log(file);
       file.flagIsWriting = true;
       file.sync();
     }

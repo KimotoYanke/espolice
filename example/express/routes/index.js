@@ -1,4 +1,5 @@
-console.log();
-register(require("./a.js"));
+console.log("あiii");
+register(require("./b.js"));
 export default (() => {
+  console.log("");
 });

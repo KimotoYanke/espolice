@@ -2,9 +2,9 @@
 import { FileNodeRule } from "espolice";
 export const Other: FileNodeRule = ({ getState, getParent, getPath }) => {
   const parent = getParent();
-  console.log(parent.pathFromRoot);
   const stateDatumKey = "[" + parent.pathFromRoot + "]moduleName";
-  const { moduleName } = getState(stateDatumKey);
+  const moduleName = getState(stateDatumKey)[stateDatumKey];
+  console.log({ moduleName });
   return $quasiquote => {
     console.log(
       //@unquote
@@ -14,9 +14,9 @@ export const Other: FileNodeRule = ({ getState, getParent, getPath }) => {
 };
 export const Index: FileNodeRule = ({ getState, getParent }) => {
   const parent = getParent();
-  console.log(parent.pathFromRoot);
   const stateDatumKey = "[" + parent.pathFromRoot + "]moduleName";
-  const { moduleName } = getState(stateDatumKey);
+  const moduleName = getState(stateDatumKey);
+  console.log({ moduleName });
   const result = $quasiquote => {
     console.log(
       //@literal
