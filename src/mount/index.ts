@@ -14,6 +14,10 @@ import { isEqual } from "lodash";
 import { fs } from "mz";
 import { mkdirpSync } from "./util";
 import { eventLog } from "../cli";
+import {
+  DictNodeRulePathToFiles,
+  createStateInterface
+} from "./state-interface";
 
 export type PseudoNode = PseudoDirectory | PseudoFile;
 
@@ -36,61 +40,13 @@ export const mount = <RS extends State>(
     ignoreInitial: false
   });
 
-  const nodeRulePathToNodesDict: {
-    [key in NodeRulePath]: Set<PseudoFile> | undefined;
-  } = {};
+  const dictNodeRulePathToFiles: DictNodeRulePathToFiles = {};
   const state: State = new State();
 
-  const getStateDatum = (key: string) => {
-    return state.data[key] || undefined;
-  };
-  const setStateDatum = (key: string, datum: any) => {
-    if (isEqual(state.data[key], datum)) {
-      return;
-    }
-    state.data[key] = datum;
-    const userPaths = getDatumUsers(key);
-
-    userPaths.forEach(nodeRulePath => {
-      const nodes = getNodesFromNodeRulePath(nodeRulePath);
-      if (nodes !== null) {
-        nodes.forEach(node => {
-          node.sync();
-        });
-      }
-    });
-  };
-  const addDatumUser = (key: string, nodeRulePath: NodeRulePath) => {
-    if (!state.datumUser[key]) {
-      state.datumUser[key] = new Set([nodeRulePath]);
-    } else {
-      state.datumUser[key].add(nodeRulePath);
-    }
-  };
-  const getDatumUsers = (key: string) => {
-    return state.datumUser[key] || new Set([]);
-  };
-  const removeDatumUser = (nodeRulePath: NodeRulePath) => {
-    for (let key in state.datumUser) {
-      state.datumUser[key].delete(nodeRulePath);
-    }
-  };
-  const getNodesFromNodeRulePath = (nodeRulePath: NodeRulePath) => {
-    return nodeRulePathToNodesDict[nodeRulePath] || null;
-  };
-  const getAllStateData = () => {
-    return state.data;
-  };
-
-  const stateInterface: StateInterface = {
-    getStateDatum,
-    setStateDatum,
-    addDatumUser,
-    getDatumUsers,
-    removeDatumUser,
-    getNodesFromNodeRulePath,
-    getAllStateData
-  };
+  const stateInterface: StateInterface = createStateInterface(
+    state,
+    dictNodeRulePathToFiles
+  );
 
   const root = getRootDirectory(rootPath, rootNodeRule, stateInterface, opts);
   root.pathFromRoot = ".";
@@ -131,12 +87,12 @@ export const mount = <RS extends State>(
               thisFileNode.parent.syncDependents();
             }
             if (thisFileNode.nodeRulePath) {
-              if (!nodeRulePathToNodesDict[thisFileNode.nodeRulePath]) {
-                nodeRulePathToNodesDict[thisFileNode.nodeRulePath] = new Set();
+              if (!dictNodeRulePathToFiles[thisFileNode.nodeRulePath]) {
+                dictNodeRulePathToFiles[thisFileNode.nodeRulePath] = new Set();
               }
-              if (nodeRulePathToNodesDict[thisFileNode.nodeRulePath]) {
+              if (dictNodeRulePathToFiles[thisFileNode.nodeRulePath]) {
                 (
-                  nodeRulePathToNodesDict[thisFileNode.nodeRulePath] || {
+                  dictNodeRulePathToFiles[thisFileNode.nodeRulePath] || {
                     add: (_: PseudoFile) => {}
                   }
                 ).add(thisFileNode);
