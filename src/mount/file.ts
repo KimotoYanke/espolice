@@ -23,7 +23,6 @@ export const addNewFile = (
   opts?: { ignore: string[] }
 ): PseudoFile | null => {
   const parentPathFromRoot = path.dirname(pathFromRoot);
-  console.log("parentPathFromRoot", parentPathFromRoot);
   const parent =
     root.findNodeFromThis(parentPathFromRoot) ||
     addNewDirectory(parentPathFromRoot, rootPath, rootNodeRule, root, opts);
@@ -37,7 +36,7 @@ export const addNewFile = (
   return file;
 };
 
-export class PseudoFile<StateDataType = { [key in string]: any }> {
+export class PseudoFile {
   type: "file";
   pathFromRoot: string;
   flagIsWriting: boolean = false;
@@ -143,7 +142,6 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
   writeForNewAst(newAst: t.Node) {
     const tmpl = this.template;
     const matched = patternMatchAST(tmpl, newAst, false);
-    console.log({ matched });
     if (matched) {
       this.matched = matched;
       for (const key in matched) {
@@ -157,13 +155,6 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
 
   write() {
     const newObj = patternResetAST(this.template, { ...this.matched }, false);
-    console.log("[.]moduleName", this.getState("[.]moduleName"));
-    console.log("matching", { ...this.matched, ...this.allStateData });
-    console.log("newObj", JSON.stringify(newObj));
-    console.log(
-      "newObjCode",
-      generate(newObj, { jsonCompatibleStrings: true }).code
-    );
     const generateWithOpts = (obj: t.Program, newOptions: GeneratorOptions) => {
       const options: GeneratorOptions = {
         jsonCompatibleStrings: true
@@ -197,8 +188,6 @@ export class PseudoFile<StateDataType = { [key in string]: any }> {
   }
 
   sync() {
-    console.log("sync for", this.pathFromRoot);
-    console.log(this.read());
     const readAst = this.read();
 
     if (!readAst) {

@@ -18,13 +18,7 @@ const readdirAsPseudoDirectory = (
   const notNull = <T>(nullable: T | null): nullable is T => {
     return nullable !== null;
   };
-  const dir = new PseudoDirectory(
-    pathFromRoot,
-    parent,
-    rootNodeRule,
-    rootPath,
-    rootNodeRule
-  );
+  const dir = new PseudoDirectory(pathFromRoot, parent, rootPath, rootNodeRule);
   const nodes = fs
     .readdirSync(path.resolve(rootPath, pathFromRoot))
     .map((childName: string): PseudoNode | null => {
@@ -76,19 +70,13 @@ export const addNewDirectory = (
     return null;
   }
 
-  const dir = new PseudoDirectory(
-    pathFromRoot,
-    parent,
-    rootNodeRule,
-    rootPath,
-    rootNodeRule
-  );
+  const dir = new PseudoDirectory(pathFromRoot, parent, rootPath, rootNodeRule);
 
   parent.children.push(dir);
   return dir;
 };
 
-export class PseudoDirectory<StateDataType = { [key in string]: any }> {
+export class PseudoDirectory {
   type: "dir";
   get name(): string {
     return path.basename(this.pathFromRoot);
@@ -105,7 +93,6 @@ export class PseudoDirectory<StateDataType = { [key in string]: any }> {
       .filter((n: PseudoNode): n is PseudoFile => n.type === "dir")
       .map(n => path.basename(n.pathFromRoot));
   }
-  stateData: StateDataType;
   parent: PseudoDirectory | null;
   rootNodeRule: DirNodeRule;
   isWriting: boolean = false;
@@ -215,13 +202,11 @@ export class PseudoDirectory<StateDataType = { [key in string]: any }> {
   constructor(
     pathFromRoot: string,
     parent: PseudoDirectory | null,
-    stateData: StateDataType,
     rootPath: string,
     rootNodeRule: DirNodeRule
   ) {
     this.type = "dir";
     this.pathFromRoot = pathFromRoot;
-    this.stateData = stateData;
     this.localState = new State();
     this.parent = parent;
     this.rootPath = rootPath;

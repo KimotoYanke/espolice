@@ -148,7 +148,6 @@ export const mount = <RS extends State>(
               stateInterface.removeDatumUser(thisFileNode.nodeRulePath);
             }
 
-            console.log("childrenFiles", parent.childrenFiles);
             parent.isWriting = true;
             parent.write();
             parent.syncDependents();

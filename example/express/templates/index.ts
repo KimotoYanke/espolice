@@ -4,7 +4,6 @@ export const Other: FileNodeRule = ({ getState, getParent, getPath }) => {
   const parent = getParent();
   const stateDatumKey = "[" + parent.pathFromRoot + "]moduleName";
   const moduleName = getState(stateDatumKey)[stateDatumKey];
-  console.log({ moduleName });
   return $quasiquote => {
     console.log(
       //@unquote
@@ -16,7 +15,6 @@ export const Index: FileNodeRule = ({ getState, getParent }) => {
   const parent = getParent();
   const stateDatumKey = "[" + parent.pathFromRoot + "]moduleName";
   const moduleName = getState(stateDatumKey);
-  console.log({ moduleName });
   const result = $quasiquote => {
     console.log(
       //@literal
