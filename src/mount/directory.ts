@@ -14,12 +14,18 @@ const readdirAsPseudoDirectory = (
   parent: PseudoDirectory | null,
   rootNodeRule: DirNodeRule,
   stateInterface: StateInterface,
-  opts?: Options
+  opts: Options
 ): PseudoDirectory => {
   const notNull = <T>(nullable: T | null): nullable is T => {
     return nullable !== null;
   };
-  const dir = new PseudoDirectory(pathFromRoot, parent, rootPath, rootNodeRule);
+  const dir = new PseudoDirectory(
+    pathFromRoot,
+    parent,
+    rootPath,
+    rootNodeRule,
+    opts
+  );
   const nodes = fs
     .readdirSync(path.resolve(rootPath, pathFromRoot))
     .map((childName: string): PseudoNode | null => {
@@ -61,7 +67,7 @@ export const addNewDirectory = (
   rootPath: string,
   rootNodeRule: DirNodeRule,
   root: PseudoDirectory,
-  opts?: { ignore: string[] }
+  opts: Options
 ): PseudoDirectory | null => {
   const parentPathFromRoot = path.resolve(pathFromRoot, "..");
   const parent =
@@ -71,7 +77,13 @@ export const addNewDirectory = (
     return null;
   }
 
-  const dir = new PseudoDirectory(pathFromRoot, parent, rootPath, rootNodeRule);
+  const dir = new PseudoDirectory(
+    pathFromRoot,
+    parent,
+    rootPath,
+    rootNodeRule,
+    opts
+  );
 
   parent.children.push(dir);
   return dir;
@@ -200,11 +212,14 @@ export class PseudoDirectory {
     return path.resolve(this.rootPath, this.pathFromRoot);
   }
 
+  options: Options;
+
   constructor(
     pathFromRoot: string,
     parent: PseudoDirectory | null,
     rootPath: string,
-    rootNodeRule: DirNodeRule
+    rootNodeRule: DirNodeRule,
+    options: Options
   ) {
     this.type = "dir";
     this.pathFromRoot = pathFromRoot;
@@ -212,6 +227,7 @@ export class PseudoDirectory {
     this.parent = parent;
     this.rootPath = rootPath;
     this.rootNodeRule = rootNodeRule;
+    this.options = options;
   }
 }
 

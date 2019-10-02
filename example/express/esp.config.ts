@@ -10,4 +10,6 @@ const RootDir: DirNodeRule = dir()
   .otherChildrenFiles(Other)
   .otherChildrenDirs(OtherDir);
 
-mount(RootDir, "./routes");
+mount(RootDir, "./routes", {
+  usePrettier: true
+});

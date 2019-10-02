@@ -1,5 +1,5 @@
-console.log("かきくけこ");
+console.log("さしすせそ");
 register(require("./b.js"));
-export default (() => {
+export default () => {
   console.log("ああ");
-});
+};

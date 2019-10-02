@@ -13,7 +13,7 @@ export const normalizeOptions = (options?: Partial<Options>): Options => {
   return {
     loserMode: options.loserMode || false,
     usePrettier: options.usePrettier || false,
-    prettierOptions: options.prettierOptions || {},
+    prettierOptions: options.prettierOptions || { parser: "babel" },
     ignore: options.ignore || ["node_modules", ".gitignore"]
   };
 };

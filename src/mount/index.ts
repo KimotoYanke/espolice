@@ -9,9 +9,6 @@ import {
 } from "./directory";
 import { findNodeRule } from "./find-node-rule";
 import { PseudoFile, addNewFile } from "./file";
-import { FileNodeRule } from "..";
-import { isEqual } from "lodash";
-import { fs } from "mz";
 import { mkdirpSync } from "./util";
 import { eventLog } from "../cli";
 import {
@@ -22,11 +19,7 @@ import { Options, normalizeOptions } from "./options";
 
 export type PseudoNode = PseudoDirectory | PseudoFile;
 
-const opts = {
-  ignore: ["node_modules", ".gitignore"]
-};
-
-export const mount = <RS extends State>(
+export const mount = (
   rootNodeRule: DirNodeRule,
   rootPath: string,
   options?: Partial<Options>
@@ -73,7 +66,7 @@ export const mount = <RS extends State>(
               rootNodeRule,
               root,
               stateInterface,
-              opts
+              normalizeOptions(options)
             );
           if (
             thisFileNode &&
@@ -112,7 +105,7 @@ export const mount = <RS extends State>(
             rootPath,
             rootNodeRule,
             root,
-            opts
+            normalizeOptions(options)
           );
 
           if (thisDirNode) {
@@ -135,7 +128,7 @@ export const mount = <RS extends State>(
             rootNodeRule,
             root,
             stateInterface,
-            opts
+            normalizeOptions(options)
           );
 
         if (thisFileNode) {

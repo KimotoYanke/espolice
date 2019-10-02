@@ -1,1 +1,1 @@
-console.log("かきくけこ");
+console.log("さしすせそ");

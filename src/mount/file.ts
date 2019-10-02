@@ -13,6 +13,7 @@ import { parse } from "@babel/parser";
 import { nodePurify } from "../node/node-purify";
 import { isEqual } from "lodash";
 import { isFileExistSync } from "./util";
+import { Options } from "./options";
 
 export const addNewFile = (
   pathFromRoot: string,
@@ -20,7 +21,7 @@ export const addNewFile = (
   rootNodeRule: DirNodeRule,
   root: PseudoDirectory,
   stateInterface: StateInterface,
-  opts?: { ignore: string[] }
+  opts: Options
 ): PseudoFile | null => {
   const parentPathFromRoot = path.dirname(pathFromRoot);
   const parent =
@@ -153,17 +154,29 @@ export class PseudoFile {
     this.write();
   }
 
+  get options(): Options {
+    return this.parent.options;
+  }
+
+  generateCode(obj: t.Program): string {
+    const generatorOptions: GeneratorOptions = {
+      jsonCompatibleStrings: true
+    };
+    generatorOptions.jsescOption = {};
+    // @ts-ignore
+    generatorOptions.jsescOption["minimal"] = true;
+
+    const babeledCode = generate(obj, { ...generatorOptions }).code;
+    if (this.options.usePrettier) {
+      return require("prettier").format(
+        babeledCode,
+        this.options.prettierOptions
+      );
+    }
+    return babeledCode;
+  }
   write() {
     const newObj = patternResetAST(this.template, { ...this.matched }, false);
-    const generateWithOpts = (obj: t.Program, newOptions: GeneratorOptions) => {
-      const options: GeneratorOptions = {
-        jsonCompatibleStrings: true
-      };
-      options.jsescOption = {};
-      // @ts-ignore
-      options.jsescOption["minimal"] = true;
-      return generate(obj, { ...options, ...newOptions });
-    };
     if (isEqual(newObj, this.ast)) {
       return;
     }
@@ -171,7 +184,7 @@ export class PseudoFile {
     this.flagIsWriting = true;
     fs.writeFileSync(
       path.join(this.rootPath, this.pathFromRoot),
-      generateWithOpts(newObj, { jsonCompatibleStrings: true }).code
+      this.generateCode(newObj)
     );
   }
 
