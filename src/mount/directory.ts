@@ -6,6 +6,7 @@ import { findNodeRule } from "./find-node-rule";
 import { fs } from "mz";
 import { PseudoFile } from "./file";
 import { mkdirpSync, isFileExistSync } from "./util";
+import { Options } from "./options";
 
 const readdirAsPseudoDirectory = (
   pathFromRoot: string,
@@ -13,7 +14,7 @@ const readdirAsPseudoDirectory = (
   parent: PseudoDirectory | null,
   rootNodeRule: DirNodeRule,
   stateInterface: StateInterface,
-  opts?: { ignore: string[] }
+  opts?: Options
 ): PseudoDirectory => {
   const notNull = <T>(nullable: T | null): nullable is T => {
     return nullable !== null;
@@ -218,7 +219,7 @@ export const getRootDirectory = (
   rootPath: string,
   rootNodeRule: DirNodeRule,
   stateInterface: StateInterface,
-  opts?: { ignore: string[] }
+  opts: Options
 ) => {
   const root: PseudoDirectory = readdirAsPseudoDirectory(
     ".",

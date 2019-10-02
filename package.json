@@ -31,6 +31,7 @@
     "@types/lodash": "^4.14.136",
     "@types/mz": "^0.0.32",
     "@types/node": "^12.0.4",
+    "@types/prettier": "^1.18.2",
     "@types/rollup-plugin-json": "^3.0.2",
     "@types/rollup-plugin-sourcemaps": "^0.4.2",
     "chalk": "^2.4.2",
@@ -72,5 +73,8 @@
     "setupFilesAfterEnv": [
       "jest-extended"
     ]
+  },
+  "peerDependencies": {
+    "prettier": "^1.18.2"
   }
 }

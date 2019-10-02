@@ -18,15 +18,12 @@ import {
   DictNodeRulePathToFiles,
   createStateInterface
 } from "./state-interface";
+import { Options, normalizeOptions } from "./options";
 
 export type PseudoNode = PseudoDirectory | PseudoFile;
 
 const opts = {
   ignore: ["node_modules", ".gitignore"]
-};
-
-type Options = {
-  loserMode: boolean;
 };
 
 export const mount = <RS extends State>(
@@ -48,7 +45,12 @@ export const mount = <RS extends State>(
     dictNodeRulePathToFiles
   );
 
-  const root = getRootDirectory(rootPath, rootNodeRule, stateInterface, opts);
+  const root = getRootDirectory(
+    rootPath,
+    rootNodeRule,
+    stateInterface,
+    normalizeOptions(options)
+  );
   root.pathFromRoot = ".";
   root.write();
 
