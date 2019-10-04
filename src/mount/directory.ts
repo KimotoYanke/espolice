@@ -5,7 +5,7 @@ import * as path from "path";
 import { findNodeRule } from "./find-node-rule";
 import { fs } from "mz";
 import { PseudoFile } from "./file";
-import { mkdirpSync, isFileExistSync } from "./util";
+import { mkdirpSync, isFileExistSync, rmpDirSync } from "./util";
 import { Options } from "./options";
 
 const readdirAsPseudoDirectory = (
@@ -110,6 +110,11 @@ export class PseudoDirectory {
   rootNodeRule: DirNodeRule;
   isWriting: boolean = false;
 
+  disabled: boolean = false;
+  get enabled() {
+    return !this.disabled;
+  }
+
   get nodeRule(): DirNodeRule {
     return (findNodeRule(
       this.pathFromRoot,
@@ -166,6 +171,10 @@ export class PseudoDirectory {
   }
 
   write() {
+    if (this.disabled) {
+      return;
+    }
+
     const thisFullpath = path.join(this.rootPath, this.pathFromRoot);
     mkdirpSync(thisFullpath);
     for (const dirName of Object.keys(this.nodeRule.childDirNodes)) {
@@ -189,7 +198,32 @@ export class PseudoDirectory {
     }
   }
 
+  remove() {
+    this.disabled = true;
+    while (this.children.length > 0) {
+      this.children[0].remove();
+    }
+
+    if (this.parent) {
+      const filtered = this.parent.children.filter(
+        node =>
+          !(node.type === "dir" && node.pathFromRoot === this.pathFromRoot)
+      );
+
+      this.parent.children = filtered;
+
+      this.parent.isWriting = true;
+      this.parent.write();
+      this.parent.syncDependents();
+      this.parent.isWriting = false;
+    }
+    rmpDirSync(this.path);
+  }
+
   syncDependents() {
+    if (this.disabled) {
+      return;
+    }
     for (let i = 0; i < this.dependentFiles.length; i++) {}
     for (const file of this.dependentFiles) {
       file.flagIsWriting = true;

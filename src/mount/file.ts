@@ -12,7 +12,7 @@ import * as t from "@babel/types";
 import { parse } from "@babel/parser";
 import { nodePurify } from "../node/node-purify";
 import { isEqual } from "lodash";
-import { isFileExistSync } from "./util";
+import { isFileExistSync, lsDirectorySync, rmpFileSync } from "./util";
 import { Options } from "./options";
 
 export const addNewFile = (
@@ -168,10 +168,14 @@ export class PseudoFile {
 
     const babeledCode = generate(obj, { ...generatorOptions }).code;
     if (this.options.usePrettier) {
-      return require("prettier").format(
-        babeledCode,
-        this.options.prettierOptions
-      );
+      try {
+        return require("prettier").format(
+          babeledCode,
+          this.options.prettierOptions
+        );
+      } catch (e) {
+        console.log("Error found: " + e);
+      }
     }
     return babeledCode;
   }
@@ -207,6 +211,27 @@ export class PseudoFile {
       return;
     }
     this.writeForNewAst(readAst);
+  }
+
+  remove() {
+    if (this.nodeRulePath) {
+      this.stateInterface.removeDatumUser(this.nodeRulePath);
+    }
+
+    if (this.parent) {
+      const foundIndex = this.parent.children.findIndex(node => {
+        node.type === "file" && node.pathFromRoot === this.pathFromRoot;
+      });
+
+      this.parent.children.splice(foundIndex, 1);
+
+      this.parent.isWriting = true;
+      this.parent.write();
+
+      this.parent.syncDependents();
+      this.parent.isWriting = false;
+    }
+    rmpFileSync(this.path);
   }
 
   constructor(

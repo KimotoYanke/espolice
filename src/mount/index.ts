@@ -9,7 +9,7 @@ import {
 } from "./directory";
 import { findNodeRule } from "./find-node-rule";
 import { PseudoFile, addNewFile } from "./file";
-import { mkdirpSync } from "./util";
+import { mkdirpSync, isFileExistSync, isDirectoryExistSync } from "./util";
 import { eventLog } from "../cli";
 import {
   DictNodeRulePathToFiles,
@@ -57,7 +57,14 @@ export const mount = (
       case "add":
       case "change":
         {
-          eventLog("FILE Add or Change", pathFromRoot);
+          if (!isFileExistSync(p)) {
+            break;
+          }
+          if (event === "add") {
+            eventLog("FILE Added", pathFromRoot);
+          } else {
+            eventLog("FILE Edited", pathFromRoot);
+          }
           const thisFileNode =
             root.findNodeFromThis(pathFromRoot) ||
             addNewFile(
@@ -99,6 +106,10 @@ export const mount = (
         break;
       case "addDir":
         {
+          if (!isDirectoryExistSync(p)) {
+            break;
+          }
+
           eventLog("DIR Added", pathFromRoot);
           const thisDirNode = addNewDirectory(
             pathFromRoot,
@@ -131,25 +142,26 @@ export const mount = (
             normalizeOptions(options)
           );
 
-        if (thisFileNode) {
-          const parent = thisFileNode.parent;
-          if (parent) {
-            const foundIndex = parent.children.findIndex(node => {
-              node.type === "file" &&
-                node.pathFromRoot === thisFileNode.pathFromRoot;
-            });
-            parent.children.splice(foundIndex, 1);
-            if (thisFileNode.nodeRulePath) {
-              stateInterface.removeDatumUser(thisFileNode.nodeRulePath);
-            }
-
-            parent.isWriting = true;
-            parent.write();
-            parent.syncDependents();
-            parent.isWriting = false;
-          }
+        if (thisFileNode && thisFileNode.type === "file") {
+          thisFileNode.remove();
         }
         break;
+      }
+      case "unlinkDir": {
+        eventLog("DIR Removed", pathFromRoot);
+        const thisDirNode =
+          root.findNodeFromThis(pathFromRoot) ||
+          addNewDirectory(
+            pathFromRoot,
+            rootPath,
+            rootNodeRule,
+            root,
+            normalizeOptions(options)
+          );
+
+        if (thisDirNode && thisDirNode.type === "dir") {
+          thisDirNode.remove();
+        }
       }
     }
   });

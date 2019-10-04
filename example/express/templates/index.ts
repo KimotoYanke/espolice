@@ -3,7 +3,7 @@ import { FileNodeRule } from "espolice";
 export const Other: FileNodeRule = ({ getState, getParent, getPath }) => {
   const parent = getParent();
   const stateDatumKey = "[" + parent.pathFromRoot + "]moduleName";
-  const moduleName = getState(stateDatumKey)[stateDatumKey];
+  const moduleName = getState(stateDatumKey)[stateDatumKey] || /*@literal*/ "";
   return $quasiquote => {
     console.log(
       //@unquote
