@@ -30,10 +30,14 @@ const patternResetArray = <T extends IObject>(
       switch (key.type) {
         case "MULTIPLE":
         case "ANY":
-          obj = [...obj, ...matched[key.as]];
+          if (matched[key.as]) {
+            obj = [...obj, ...matched[key.as]];
+          }
           continue;
       }
-      obj.push(matched[key.as]);
+      if (matched[key.as]) {
+        obj.push(matched[key.as]);
+      }
     } else {
       obj.push(patternReset(tmplElement, matched, opts));
     }
