@@ -3,7 +3,6 @@ import commonjs from "rollup-plugin-commonjs";
 const sourceMaps = require("rollup-plugin-sourcemaps");
 const json = require("rollup-plugin-json");
 const typescript = require("rollup-plugin-typescript2");
-const autoExternal = require("rollup-plugin-auto-external");
 
 const pkg = require("./package.json");
 
@@ -11,18 +10,13 @@ const libraryName = "index";
 
 const plugins = [
   json(),
-  commonjs({
-    namedExports: {
-      "node_modules/lodash/lodash.js": ["isEqual"]
-    }
-  }),
+  commonjs(),
   resolve({
     preferBuiltins: true,
     extensions: [".ts", ".js"]
   }),
   sourceMaps(),
-  typescript(),
-  autoExternal()
+  typescript()
 ];
 
 export default [
@@ -40,7 +34,7 @@ export default [
     watch: {
       include: "src/**"
     },
-    external: ["mz/fs", "@babel/types"],
+    external: [...Object.keys(pkg.dependencies)],
     plugins
   }
 ];

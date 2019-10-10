@@ -1,4 +1,5 @@
-import { isEqual } from "lodash";
+import { deepEqual } from "fast-equals";
+
 import {
   MatchOptions,
   GroupResult,
@@ -315,6 +316,6 @@ export const patternMatch = (
     return patternMatchObject(tmplU, objU, opts);
   }
 
-  if (opts.debug) console.log("type:isEqual", "returns", isEqual(tmpl, obj));
-  return isEqual(tmpl, obj) ? {} : false;
+  if (opts.debug) console.log("type:isEqual", "returns", deepEqual(tmpl, obj));
+  return deepEqual(tmpl, obj) ? {} : false;
 };

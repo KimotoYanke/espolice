@@ -1,4 +1,4 @@
-import { fs } from "mz";
+import * as fs from "fs";
 export const isDirectoryExistSync = (p: string): boolean => {
   try {
     return fs.statSync(p).isDirectory();

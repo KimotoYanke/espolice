@@ -1,6 +1,6 @@
 import { StateInterface, State, NodeRulePath } from "./state";
-import { isEqual } from "lodash";
 import { PseudoFile } from "./file";
+import { deepEqual } from "fast-equals";
 
 export type DictNodeRulePathToFiles = {
   [key in NodeRulePath]: Set<PseudoFile> | undefined;
@@ -13,7 +13,7 @@ export const createStateInterface = (
     return state.data[key] || undefined;
   };
   const setStateDatum = (key: string, datum: any) => {
-    if (isEqual(state.data[key], datum)) {
+    if (deepEqual(state.data[key], datum)) {
       return;
     }
     state.data[key] = datum;

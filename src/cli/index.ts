@@ -1,7 +1,8 @@
 import { Command, flags } from "@oclif/command";
 import { isFileExistSync } from "../mount/util";
 import * as path from "path";
-import { fs, child_process as cp } from "mz";
+import * as fs from "fs";
+import * as cp from "child_process";
 
 const findPackageJSON = (cwd = path.resolve(process.cwd())): any => {
   const packageJSONPath = path.join(cwd, "package.json");
@@ -58,13 +59,8 @@ class EspoliceCommand extends Command {
       process.env.npm_package_devDependencies || "{}"
     );
     findPackageJSON();
-    console.log(devDeps);
 
-    if (ext === ".ts") {
-      cp.spawnSync(["npx", "ts-node", configFile].join(" "));
-    } else {
-      cp.spawnSync(["npx", "babel-node", configFile].join(" "));
-    }
+    cp.spawnSync(["npx", "babel-node", configFile].join(" "));
   }
 }
 

@@ -3,7 +3,7 @@ import { DirNodeRule } from "..";
 import { State, NodeRulePath, StateInterface } from "./state";
 import * as path from "path";
 import { findNodeRule } from "./find-node-rule";
-import { fs } from "mz";
+import * as fs from "fs";
 import { PseudoFile } from "./file";
 import { mkdirpSync, isFileExistSync, rmpDirSync } from "./util";
 import { Options } from "./options";

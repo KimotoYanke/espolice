@@ -6,14 +6,14 @@ import { findNodeRule } from "./find-node-rule";
 import { toProgram } from "./to-program";
 import { MatchedList } from "../pattern-matcher/matched-list";
 import { patternMatchAST, patternResetAST } from "../pattern-matcher";
-import { fs } from "mz";
+import * as fs from "fs";
 import generate, { GeneratorOptions } from "@babel/generator";
 import * as t from "@babel/types";
 import { parse } from "@babel/parser";
 import { nodePurify } from "../node/node-purify";
-import { isEqual } from "lodash";
 import { isFileExistSync, lsDirectorySync, rmpFileSync } from "./util";
 import { Options } from "./options";
+import { deepEqual } from "fast-equals";
 
 export const addNewFile = (
   pathFromRoot: string,
@@ -181,7 +181,7 @@ export class PseudoFile {
   }
   write() {
     const newObj = patternResetAST(this.template, { ...this.matched }, false);
-    if (isEqual(newObj, this.ast)) {
+    if (deepEqual(newObj, this.ast)) {
       return;
     }
     this.ast = newObj as t.Program;
