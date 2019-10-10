@@ -10,7 +10,7 @@ import {
 import { findNodeRule } from "./find-node-rule";
 import { PseudoFile, addNewFile } from "./file";
 import { mkdirpSync, isFileExistSync, isDirectoryExistSync } from "./util";
-import { eventLog } from "../cli";
+import { eventLog } from "../cli/util";
 import {
   DictNodeRulePathToFiles,
   createStateInterface

@@ -6,6 +6,7 @@ import {
   MatchedList
 } from "./matched-list";
 import { patternPreprocess } from "./pattern-preprocess";
+import { IObject } from "./i-object";
 
 const patternMatchArray = <T extends IObject, O extends IObject>(
   tmpl: T[],

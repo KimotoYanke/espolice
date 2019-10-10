@@ -1,4 +1,4 @@
-interface IObject {
+export interface IObject {
   [key: string]: any;
   [key: number]: any;
 }

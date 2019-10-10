@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
+  "bin": "bin/run",
   "repository": "https://github.com/KimotoYanke/espolice",
   "author": "KimotoYanke <kimotoyanke@gmail.com>",
   "license": "Apache",
@@ -12,6 +13,7 @@
     "espurify": "^2.0.1",
     "esrecurse": "^4.2.1",
     "mz": "^2.7.0",
+    "oclif": "^1.13.6",
     "seedrandom": "^3.0.5"
   },
   "devDependencies": {
@@ -78,6 +80,7 @@
     ]
   },
   "peerDependencies": {
-    "prettier": "^1.18.2"
+    "prettier": "^1.18.2",
+    "ts-node": "^8.4.1"
   }
 }
