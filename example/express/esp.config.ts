@@ -1,6 +1,5 @@
 import { DirNodeRule, dir, mount } from "espolice";
-import { Index, Other } from "./templates";
-
+import { Index, Other } from "./templates/index";
 const OtherDir: DirNodeRule = dir()
   .haveChildFile(Index, "index.js")
   .otherChildrenFiles(Other);

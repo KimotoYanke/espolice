@@ -2,6 +2,7 @@ import { Command, flags } from "@oclif/command";
 import { isFileExistSync } from "../mount/util";
 import * as path from "path";
 import * as fs from "fs";
+import * as os from "os";
 import * as cp from "child_process";
 
 const findPackageJSON = (cwd = path.resolve(process.cwd())): any => {
@@ -55,12 +56,15 @@ class EspoliceCommand extends Command {
     }
 
     const ext = path.extname(configFile);
-    const devDeps: { [key in string]: string } = JSON.parse(
-      process.env.npm_package_devDependencies || "{}"
-    );
-    findPackageJSON();
-
-    cp.spawnSync(["npx", "babel-node", configFile].join(" "));
+    const tsFlag = ext === ".ts" ? ["--extensions", ".ts"] : [];
+    const argv = ["babel-node", ...tsFlag, configFile];
+    const commandStream = cp.spawn("npx", argv, {
+      cwd: process.cwd(),
+      stdio: "inherit"
+    });
+    commandStream.on("error", (err: Error) => {
+      console.error("Failed to start: ", err);
+    });
   }
 }
 
