@@ -1,6 +1,6 @@
-//@ts-nocheck
+//@ts-check
 import { FileNodeRule } from "espolice";
-export const Other: FileNodeRule = ({ getState, getParent, getPath }) => {
+export const Other = ({ getState, getParent, getPath }) => {
   const parent = getParent();
   const stateDatumKey = "[" + parent.pathFromRoot + "]moduleName";
   const moduleName = getState(stateDatumKey)[stateDatumKey] || /*@literal*/ "";
@@ -11,7 +11,7 @@ export const Other: FileNodeRule = ({ getState, getParent, getPath }) => {
     );
   };
 };
-export const Index: FileNodeRule = ({ getState, getParent }) => {
+export const Index = ({ getState, getParent }) => {
   const parent = getParent();
   const stateDatumKey = "[" + parent.pathFromRoot + "]moduleName";
   const moduleName = getState(stateDatumKey);

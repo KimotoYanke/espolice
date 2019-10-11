@@ -1,4 +1,4 @@
-import { isGroup } from "../src/node/is-group";
+import { isGroup } from "../../src/node/is-group";
 import template from "@babel/template";
 describe("ノード", () => {
   test("isGroup関数", () => {

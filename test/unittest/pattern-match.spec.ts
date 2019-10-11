@@ -1,12 +1,12 @@
 import template from "@babel/template";
-import { patternMatch } from "../src/pattern-matcher/pattern-match";
+import { patternMatch } from "../../src/pattern-matcher/pattern-match";
 import "jest-extended";
-import { nodePurify } from "../src/node/node-purify";
+import { nodePurify } from "../../src/node/node-purify";
 import * as t from "@babel/types";
-import { patternMatchAST } from "../src/pattern-matcher";
-import { isGroup } from "../src/node/is-group";
-import { isNode } from "../src/node/is-node";
-import { GroupResult } from "../src/pattern-matcher/matched-list";
+import { patternMatchAST } from "../../src/pattern-matcher";
+import { isGroup } from "../../src/node/is-group";
+import { isNode } from "../../src/node/is-node";
+import { GroupResult } from "../../src/pattern-matcher/matched-list";
 
 describe("パターンマッチ", () => {
   describe("文字列でのテスト", () => {

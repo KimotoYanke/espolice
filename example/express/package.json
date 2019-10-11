@@ -9,9 +9,7 @@
   "devDependencies": {
     "@babel/cli": "^7.5.5",
     "@babel/node": "^7.5.5",
-    "ts-node": "^8.4.1"
-  },
-  "peerDependencies": {
     "prettier": "^1.18.2"
-  }
+  },
+  "peerDependencies": {}
 }

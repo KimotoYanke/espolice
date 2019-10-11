@@ -1,10 +1,10 @@
 import "jest-extended";
-import { patternMatch } from "../src/pattern-matcher/pattern-match";
-import { patternReset } from "../src/pattern-matcher/pattern-reset";
-import { MatchOptions } from "../src/pattern-matcher/matched-list";
-import { nodePurify } from "../src/node/node-purify";
+import { patternMatch } from "../../src/pattern-matcher/pattern-match";
+import { patternReset } from "../../src/pattern-matcher/pattern-reset";
+import { MatchOptions } from "../../src/pattern-matcher/matched-list";
+import { nodePurify } from "../../src/node/node-purify";
 import template from "@babel/template";
-import { patternMatchAST, patternResetAST } from "../src/pattern-matcher";
+import { patternMatchAST, patternResetAST } from "../../src/pattern-matcher";
 import * as t from "@babel/types";
 
 describe("パターンを元に戻す", () => {

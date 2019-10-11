@@ -1,2 +1,4 @@
 console.log("a");
-export default () => {};
+export default () => {
+  あ;
+};
