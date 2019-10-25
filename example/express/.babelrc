@@ -12,7 +12,8 @@
   ],
   "plugins": [
     "@babel/proposal-class-properties",
-    "babel-plugin-transform-quasiquote"
+    "babel-plugin-transform-quasiquote",
+    "@babel/plugin-syntax-jsx"
   ],
   "parserOpts": {
     "allowImportExportEverywhere": true

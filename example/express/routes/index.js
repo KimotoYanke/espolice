@@ -1,4 +1,3 @@
-console.log("a");
-export default () => {
-  あ;
-};
+console.log("c");
+register(require("./b.js"));
+export default () => {};

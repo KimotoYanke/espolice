@@ -1,9 +1,7 @@
 import * as path from "path";
 import * as fs from "fs-extra";
 import * as cp from "child_process";
-import chokidar from "chokidar";
-import "jest-extended";
-
+import * as chokidar from "chokidar";
 const initTED = (ted: string) => {
   const tedOptions: cp.ExecSyncOptions = {
     cwd: ted
@@ -68,9 +66,9 @@ const makeEspConfig = (code: string) => {
 };
 
 const testEsp = (
-  onFileChanged: { [key in string]: (code) => void },
+  onFileChanged: { [key in string]: (code: string) => void },
   testName: string,
-  done: jest.DoneCallback
+  done: () => void
 ) => {
   watcher = chokidar.watch(testEnvironmentDir, {
     persistent: true,
@@ -83,6 +81,7 @@ const testEsp = (
       if (e === "change" && path.relative(testEnvironmentDir, p).endsWith(k)) {
         const indexJS = fs.readFileSync(p).toString();
         onFileChanged[k](indexJS);
+        console.log(k + " done");
         done();
       }
     }
@@ -105,48 +104,73 @@ const testEsp = (
     });
   });
 };
-describe("e2e test", () => {
-  beforeEach(done => {
-    watcher = null;
-    makeTED();
-    done();
-  });
-  afterEach(done => {
-    watcher.close();
-    watcher = null;
-    stream.on("exit", () => {
-      stream = null;
-      done();
-    });
-    stream.kill();
-  });
-  it("file tmpl", done => {
-    makeEspConfig(`
-    import { dir, mount } from "espolice";
-    const Index = () => {
-      return $quasiquote => {
-        console.log("Test");
-      }
-    }
-    const RootDir = dir()
-      .haveChildFile(Index, "index.js")
 
-    mount(RootDir, "./src", {
-      usePrettier: true
-    });
-    `);
-    testEsp(
-      {
-        "src/index.js": code => {
-          expect(code.trim()).toBe('console.log("Test");');
-        }
-      },
-      "file tmpl",
-      done
-    );
+const finallyProc = async () => {
+  await new Promise(resolve => {
+    if (watcher) {
+      watcher.close();
+      watcher = null;
+    }
+    if (stream) {
+      stream.on("exit", () => {
+        stream = null;
+        resolve();
+      });
+      stream.on("close", () => {
+        stream = null;
+        resolve();
+      });
+      stream.kill();
+    }
   });
-  it("other file tmpl", done => {
-    makeEspConfig(`
+  return;
+};
+
+type Test = [boolean, () => Promise<void>];
+
+const testFileImpl: Test = [
+  false,
+  async () => {
+    makeTED();
+    const result = new Promise<void>(resolve => {
+      makeEspConfig(`
+  import { dir, mount } from "espolice";
+  const Index = () => {
+    return $quasiquote => {
+      console.log("Test");
+    }
+  }
+  const RootDir = dir()
+    .haveChildFile(Index, "index.js")
+
+  mount(RootDir, "./src", {
+    usePrettier: true
+  });
+  `);
+      testEsp(
+        {
+          "src/index.js": code => {
+            if (code.trim() === 'console.log("Test");') {
+              testFileImpl[0] = true;
+            } else {
+              throw new Error(`code.trim() == ${code.trim()}`);
+            }
+          }
+        },
+        "file tmpl",
+        () => resolve()
+      );
+    }).then(finallyProc);
+    return result;
+  }
+];
+
+const testOtherFileTmpl: Test = [
+  false,
+  async () => {
+    makeTED();
+    const result = new Promise<void>(resolve => {
+      makeEspConfig(`
     import { dir, mount } from "espolice";
     const Index = () => {
       return $quasiquote => {
@@ -166,16 +190,37 @@ describe("e2e test", () => {
       usePrettier: true
     });
     `);
-    fs.mkdirpSync(testEnvironmentDir + "/src");
-    fs.writeFileSync(testEnvironmentDir + "/src/other.js", "");
-    testEsp(
-      {
-        "src/other.js": code => {
-          expect(code.trim()).toBe('console.log("Other");');
-        }
-      },
-      "other file tmpl",
-      done
-    );
-  });
-});
+      fs.mkdirpSync(testEnvironmentDir + "/src");
+      fs.writeFileSync(testEnvironmentDir + "/src/other.js", "");
+      testEsp(
+        {
+          "src/other.js": code => {
+            if (code.trim() == 'console.log("Other");') {
+              testOtherFileTmpl[0] = true;
+            } else {
+              throw new Error(`code.trim() == ${code.trim()}`);
+            }
+          }
+        },
+        "other file tmpl",
+        () => resolve()
+      );
+    }).then(finallyProc);
+    return result;
+  }
+];
+
+const all = { testFileImpl, testOtherFileTmpl };
+const proc = async () => {
+  for (const [name, test] of Object.entries(all)) {
+    console.log(name);
+    await test[1]().then(() => {
+      if (test[0]) {
+        console.log("✔");
+      } else {
+        console.log("✘");
+      }
+    });
+  }
+};
+proc();

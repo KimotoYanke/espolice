@@ -27,7 +27,8 @@ export const mount = (
   mkdirpSync(rootPath);
   const watcher = chokidar.watch(rootPath, {
     persistent: true,
-    ignoreInitial: false
+    ignoreInitial: false,
+    ignored: normalizeOptions(options).ignore
   });
 
   const dictNodeRulePathToFiles: DictNodeRulePathToFiles = {};

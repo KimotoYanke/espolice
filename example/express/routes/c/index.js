@@ -1,2 +1,3 @@
-console.log();
+console.log("d");
+register(require("./d.js"));
 export default () => {};

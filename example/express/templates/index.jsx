@@ -4,11 +4,10 @@ export const Other = ({ getState, getParent, getPath }) => {
   const parent = getParent();
   const stateDatumKey = "[" + parent.pathFromRoot + "]moduleName";
   const moduleName = getState(stateDatumKey)[stateDatumKey] || /*@literal*/ "";
+  const p = getPath();
   return $quasiquote => {
-    console.log(
-      //@unquote
-      moduleName
-    );
+    console.log(/*@unquote*/ moduleName);
+    console.log(/*@literal*/ p);
   };
 };
 export const Index = ({ getState, getParent }) => {
