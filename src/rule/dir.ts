@@ -8,6 +8,16 @@ type ChildrenOption<T> = {
 export class DirNodeRule<Option = {}> {
   childFileNodes: { [key: string]: FileNodeRule } = {};
   childDirNodes: { [key: string]: DirNodeRule } = {};
+
+  dirInitFunction: (p: string) => void = () => {};
+  setDirInitFunction(emitFunction: (p: string) => void) {
+    this.dirInitFunction = emitFunction;
+  }
+  fileInitFunction: (p: string) => void = () => {};
+  setFileInitFunction(emitFunction: (p: string) => void) {
+    this.fileInitFunction = emitFunction;
+  }
+
   haveChildFile(f: FileNodeRule, filename: string) {
     this.childFileNodes[filename] = f;
     return this;

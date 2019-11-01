@@ -1,5 +1,6 @@
 import { dir, mount } from "espolice";
-import { Index, Other } from "./templates/index";
+import { Index } from "./templates/index";
+import { Other } from "./templates/other";
 const OtherDir = dir()
   .haveChildFile(Index, "index.js")
   .otherChildrenFiles(Other);

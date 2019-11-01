@@ -109,7 +109,8 @@ export class PseudoFile {
   }
 
   get nodeRule(): FileNodeRule {
-    const defaultFileNodeRule: FileNodeRule = () => t.program([]);
+    const defaultFileNodeRule: FileNodeRule = () =>
+      t.program([t.expressionStatement(t.stringLiteral("@any"))]);
     return (
       (findNodeRule(
         this.pathFromRoot,
@@ -213,6 +214,10 @@ export class PseudoFile {
     this.writeForNewAst(readAst);
   }
 
+  initialRegistration() {
+    this.root.rootNodeRule.fileInitFunction(this.pathFromRoot);
+  }
+
   remove() {
     if (this.nodeRulePath) {
       this.stateInterface.removeDatumUser(this.nodeRulePath);
@@ -220,10 +225,17 @@ export class PseudoFile {
 
     if (this.parent) {
       const foundIndex = this.parent.children.findIndex(node => {
-        node.type === "file" && node.pathFromRoot === this.pathFromRoot;
+        return (
+          node.type === "file" &&
+          path.normalize(node.pathFromRoot) ===
+            path.normalize(this.pathFromRoot)
+        );
       });
+      console.log(this.parent.children, this.pathFromRoot, foundIndex);
 
-      this.parent.children.splice(foundIndex, 1);
+      if (foundIndex >= 0) {
+        this.parent.children.splice(foundIndex, 1);
+      }
 
       this.parent.isWriting = true;
       this.parent.write();

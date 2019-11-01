@@ -1,3 +1,5 @@
-console.log("d");
-register(require("./d.js"));
-export default () => {};
+import { Router } from "express";
+const router = Router();
+router.use("/a", require("./a.js"));
+router.use("/d", require("./d.js"));
+export default router;

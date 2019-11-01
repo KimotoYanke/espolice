@@ -18,4 +18,15 @@ describe("ノード", () => {
     tmpl
     `;
   });
+  test("全@any", () => {
+    const tmplAst = template.program`
+      "@any"
+    `;
+
+    const objAst = template.program`
+    import { isGroup } from "../../src/node/is-group";
+    import template from "@babel/template";
+    describe("ノード", () => { });
+    `;
+  });
 });

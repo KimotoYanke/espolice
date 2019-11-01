@@ -65,6 +65,11 @@ class EspoliceCommand extends Command {
     commandStream.on("error", (err: Error) => {
       console.error("Failed to start: ", err);
     });
+    process.on("SIGINT", function() {
+      commandStream.kill();
+      console.log("exit");
+      process.exit();
+    });
   }
 }
 

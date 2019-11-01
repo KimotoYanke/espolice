@@ -5,8 +5,14 @@ import * as path from "path";
 import { findNodeRule } from "./find-node-rule";
 import * as fs from "fs";
 import { PseudoFile } from "./file";
-import { mkdirpSync, isFileExistSync, rmpDirSync } from "./util";
+import {
+  mkdirpSync,
+  isFileExistSync,
+  rmpDirSync,
+  isDirectoryExistSync
+} from "./util";
 import { Options } from "./options";
+import { file } from "@babel/types";
 
 const readdirAsPseudoDirectory = (
   pathFromRoot: string,
@@ -247,6 +253,55 @@ export class PseudoDirectory {
   }
 
   options: Options;
+
+  initialRegistration() {
+    this.rootNodeRule.dirInitFunction(this.pathFromRoot);
+    const thisFullPath = path.resolve(this.rootPath, this.pathFromRoot);
+    if (this.disabled) {
+      return;
+    }
+
+    const dirNames = Object.keys(this.nodeRule.childDirNodes);
+    const fileNames = Object.keys(this.nodeRule.childFileNodes);
+    for (const fileName of fileNames) {
+      const file = this.findNodeFromThis(fileName);
+      if (file) {
+        file.initialRegistration();
+      }
+    }
+
+    for (const dirName of dirNames) {
+      const dir = this.findNodeFromThis(dirName);
+      if (dir) {
+        dir.initialRegistration();
+      }
+    }
+
+    const ls = fs.readdirSync(thisFullPath);
+
+    for (const fileName of ls.filter(
+      f =>
+        isFileExistSync(path.resolve(this.rootPath, this.pathFromRoot, f)) &&
+        !fileNames.includes(f)
+    )) {
+      const file = this.findNodeFromThis(fileName);
+      if (file) {
+        file.initialRegistration();
+      }
+    }
+
+    for (const dirName of ls.filter(
+      f =>
+        isDirectoryExistSync(
+          path.resolve(this.rootPath, this.pathFromRoot, f)
+        ) && !dirNames.includes(f)
+    )) {
+      const dir = this.findNodeFromThis(dirName);
+      if (dir) {
+        dir.initialRegistration();
+      }
+    }
+  }
 
   constructor(
     pathFromRoot: string,
