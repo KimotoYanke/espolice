@@ -89,16 +89,6 @@
         "testMatch": [
           "**/test/unittest/**/*.spec.ts"
         ]
-      },
-      {
-        "displayName": "e2etest",
-        "testMatch": [
-          "**/test/e2e-test/**/*.spec.ts"
-        ],
-        "setupFilesAfterEnv": [
-          "jest-extended",
-          "./test/e2e-test/jest.setup.ts"
-        ]
       }
     ]
   },

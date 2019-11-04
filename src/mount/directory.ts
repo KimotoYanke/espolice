@@ -255,11 +255,11 @@ export class PseudoDirectory {
   options: Options;
 
   initialRegistration() {
-    this.rootNodeRule.dirInitFunction(this.pathFromRoot);
     const thisFullPath = path.resolve(this.rootPath, this.pathFromRoot);
     if (this.disabled) {
       return;
     }
+    this.rootNodeRule.dirInitFunction(this.pathFromRoot);
 
     const dirNames = Object.keys(this.nodeRule.childDirNodes);
     const fileNames = Object.keys(this.nodeRule.childFileNodes);

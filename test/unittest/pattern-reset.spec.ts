@@ -84,7 +84,7 @@ describe("パターンを元に戻す", () => {
         return;
       }
 
-      expect(patternResetAST(tmplAst, matched, true)).toEqual(objAst);
+      expect(patternResetAST(tmplAst, matched)).toEqual(objAst);
     });
 
     test("1つのグループ化で2つ取得する", () => {

@@ -145,7 +145,7 @@ export class PseudoFile {
     const tmpl = this.template;
     const matched = patternMatchAST(tmpl, newAst, false);
     if (matched) {
-      this.matched = matched;
+      this.matched = { ...this.matched, ...matched };
       for (const key in matched) {
         if (!key.match(/^((one)|(some)|(any))_\d+$/)) {
           this.setStateDatum(key, matched[key]);
@@ -231,7 +231,6 @@ export class PseudoFile {
             path.normalize(this.pathFromRoot)
         );
       });
-      console.log(this.parent.children, this.pathFromRoot, foundIndex);
 
       if (foundIndex >= 0) {
         this.parent.children.splice(foundIndex, 1);
