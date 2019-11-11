@@ -274,6 +274,8 @@ export const patternMatch = (
   const isNode = opts.isNode || defaultOptions.isNode;
   const isGroup = opts.isGroup || defaultOptions.isGroup;
   const isDisorderly = opts.isDisorderly || defaultOptions.isDisorderly;
+  const formerMatchedList =
+    opts.formerMatchedList || defaultOptions.formerMatchedList;
   const tmpl = patternPreprocess(tmplRaw, opts);
   if (opts.debug) console.log(`patternMatch(`, tmpl, `,`, obj, `)`);
 
@@ -290,7 +292,9 @@ export const patternMatch = (
       switch (key.type) {
         case "SINGLE":
         case "ANY":
-          return { [key.as]: objU };
+          if (formerMatchedList[key.as] !== objU) {
+            return { [key.as]: objU };
+          }
         default:
           return false;
       }
@@ -303,7 +307,16 @@ export const patternMatch = (
 
   if (tmpl instanceof Array && obj instanceof Array) {
     if (opts.debug) console.log("array");
-    return patternMatchArray(tmpl, obj, opts);
+    const matchedList = patternMatchArray(tmpl, obj, opts);
+    let result: MatchedList = {};
+    if (matchedList) {
+      for (const key of Object.keys(matchedList)) {
+        if (!deepEqual(matchedList[key], formerMatchedList[key])) {
+          result[key] = matchedList[key];
+        }
+      }
+    }
+    return result;
   }
 
   if (
@@ -313,7 +326,16 @@ export const patternMatch = (
     objU !== null
   ) {
     if (opts.debug) console.log("type:object");
-    return patternMatchObject(tmplU, objU, opts);
+    const matchedList = patternMatchObject(tmpl, obj, opts);
+    let result: MatchedList = {};
+    if (matchedList) {
+      for (const key of Object.keys(matchedList)) {
+        if (!deepEqual(matchedList[key], formerMatchedList[key])) {
+          result[key] = matchedList[key];
+        }
+      }
+    }
+    return result;
   }
 
   if (opts.debug) console.log("type:isEqual", "returns", deepEqual(tmpl, obj));

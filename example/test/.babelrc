@@ -1,0 +1,16 @@
+{
+  "presets": [
+    [
+      "@babel/env",
+      {
+        "targets": {
+          "node": 8
+        }
+      }
+    ]
+  ],
+  "plugins": ["babel-plugin-transform-quasiquote"],
+  "parserOpts": {
+    "allowImportExportEverywhere": true
+  }
+}

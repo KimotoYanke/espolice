@@ -14,6 +14,7 @@ import { nodePurify } from "../node/node-purify";
 import { isFileExistSync, lsDirectorySync, rmpFileSync } from "./util";
 import { Options } from "./options";
 import { deepEqual } from "fast-equals";
+import { eventLog } from "../cli/util";
 
 export const addNewFile = (
   pathFromRoot: string,
@@ -141,11 +142,11 @@ export class PseudoFile {
   }
 
   matched: MatchedList = {};
-  writeForNewAst(newAst: t.Node) {
+  writeForNewAst(newAst: t.Node, state: MatchedList = {}) {
     const tmpl = this.template;
-    const matched = patternMatchAST(tmpl, newAst, false);
+    const matched = patternMatchAST(tmpl, newAst, this.matched, false);
     if (matched) {
-      this.matched = { ...this.matched, ...matched };
+      this.matched = { ...this.matched, ...matched, ...state };
       for (const key in matched) {
         if (!key.match(/^((one)|(some)|(any))_\d+$/)) {
           this.setStateDatum(key, matched[key]);
@@ -198,20 +199,31 @@ export class PseudoFile {
       return null;
     }
     const code = fs.readFileSync(this.path).toString();
-    const ast = parse(code, {
-      allowImportExportEverywhere: true
-    }).program;
-    this.ast = nodePurify(ast);
-    return ast;
+    let ast: t.Program | null = null;
+    try {
+      ast = parse(code, {
+        allowImportExportEverywhere: true
+      }).program;
+    } catch (e) {
+      eventLog("Code Error", this.pathFromRoot);
+      console.log(e.toString());
+      ast = null;
+    }
+
+    if (ast) {
+      this.ast = nodePurify(ast);
+      return ast;
+    }
+    return this.ast;
   }
 
-  sync() {
+  sync(state: MatchedList = {}) {
     const readAst = this.read();
 
     if (!readAst) {
       return;
     }
-    this.writeForNewAst(readAst);
+    this.writeForNewAst(readAst, state);
   }
 
   initialRegistration() {

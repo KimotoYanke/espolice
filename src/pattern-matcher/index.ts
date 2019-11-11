@@ -7,12 +7,18 @@ import { nodePurify } from "../node/node-purify";
 import { patternReset } from "./pattern-reset";
 import { MatchedList } from "./matched-list";
 
-export const patternMatchAST = (tmpl: t.Node, obj: t.Node, debug?: boolean) => {
+export const patternMatchAST = (
+  tmpl: t.Node,
+  obj: t.Node,
+  formerMatchedList: MatchedList,
+  debug?: boolean
+) => {
   return patternMatch(nodePurify(tmpl), nodePurify(obj), {
     debug,
     isNode,
     isGroup,
     isDisorderly,
+    formerMatchedList,
     generic: ["one", "some", "any"]
   });
 };

@@ -19,6 +19,7 @@ export interface MatchOptions {
   fromGroup: FromGroupFunction;
   isDisorderly: ObjectIsDisorderlyFunction;
   generic: string[];
+  formerMatchedList: MatchedList;
   debug: boolean;
 }
 export const defaultOptions: MatchOptions = {
@@ -27,5 +28,6 @@ export const defaultOptions: MatchOptions = {
   fromGroup: defaultFromGroupFunction,
   isDisorderly: defaultIsDisorderlyFunction,
   generic: ["one", "some", "any"],
+  formerMatchedList: {},
   debug: false
 };

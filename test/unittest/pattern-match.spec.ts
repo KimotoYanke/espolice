@@ -190,7 +190,7 @@ describe("パターンマッチ", () => {
     `()
       );
 
-      const result = patternMatchAST(tmplAst, objAst);
+      const result = patternMatchAST(tmplAst, objAst, {});
       if (typeof result === "boolean") {
         expect(result).not.toBeBoolean();
         return;
@@ -218,7 +218,7 @@ describe("パターンマッチ", () => {
     `()
       );
 
-      const result = patternMatchAST(tmplAst, objAst);
+      const result = patternMatchAST(tmplAst, objAst, {});
       if (typeof result === "boolean") {
         expect(result).not.toBeBoolean();
         return;
@@ -247,7 +247,7 @@ describe("パターンマッチ", () => {
     `()
       );
 
-      const result = patternMatchAST(tmplAst, objAst);
+      const result = patternMatchAST(tmplAst, objAst, {});
       if (typeof result === "boolean") {
         expect(result).not.toBeBoolean();
         return;
@@ -274,7 +274,7 @@ describe("パターンマッチ", () => {
     `()
       );
 
-      const result = patternMatchAST(tmplAst, objAst);
+      const result = patternMatchAST(tmplAst, objAst, {});
       expect(result).toBeFalse();
     });
 
@@ -296,7 +296,7 @@ describe("パターンマッチ", () => {
             }`()
         );
 
-        const result = patternMatchAST(tmplAst, objAst);
+        const result = patternMatchAST(tmplAst, objAst, {});
         expect(result).toEqual({
           first: t.stringLiteral("one"),
           second: t.stringLiteral("two")
@@ -324,7 +324,7 @@ describe("パターンマッチ", () => {
             }`()
         );
 
-        const result = patternMatchAST(tmplAst, objAst);
+        const result = patternMatchAST(tmplAst, objAst, {});
         expect(result).toEqual({
           one_0: t.stringLiteral("one"),
           two: t.stringLiteral("two"),
@@ -342,7 +342,7 @@ describe("パターンマッチ", () => {
       const tmpl = template.program`console.log("a = @any", "b=@any")`();
       const obj = template.program`console.log(0,1,2,3)`();
 
-      const result = patternMatchAST(tmpl, obj);
+      const result = patternMatchAST(tmpl, obj, {});
       expect(result).toEqual({
         a: [],
         b: [0, 1, 2, 3].map(n => t.numericLiteral(n))
@@ -353,7 +353,7 @@ describe("パターンマッチ", () => {
       const tmpl = template.program`console.log("a = @any", "b=@any")`();
       const obj = template.program``();
 
-      const result = patternMatchAST(tmpl, obj);
+      const result = patternMatchAST(tmpl, obj, {});
       expect(result).toBeFalse();
     });
 
@@ -361,7 +361,7 @@ describe("パターンマッチ", () => {
       const tmpl = template.program`a("@one", "@one");b("@one","@one")`();
       const obj = template.program`a(0, 1);b(2,3)`();
 
-      const result = patternMatchAST(tmpl, obj);
+      const result = patternMatchAST(tmpl, obj, {});
       expect(result).toEqual({
         one_0: t.numericLiteral(0),
         one_1: t.numericLiteral(1),
@@ -373,7 +373,7 @@ describe("パターンマッチ", () => {
       const tmpl = template.program`a("@one", "@one");b("@one",c("@one","@one"))`();
       const obj = template.program`a(0, 1);b(2,c(3,4))`();
 
-      const result = patternMatchAST(tmpl, obj);
+      const result = patternMatchAST(tmpl, obj, {});
       expect(result).toEqual({
         one_0: t.numericLiteral(0),
         one_1: t.numericLiteral(1),
@@ -386,7 +386,7 @@ describe("パターンマッチ", () => {
       const tmpl = template.program`a("@one", "@any");b("@one",c("@one","@any"))`();
       const obj = template.program`a(0, 1);b(2,c(3,4))`();
 
-      const result = patternMatchAST(tmpl, obj);
+      const result = patternMatchAST(tmpl, obj, {});
       expect(result).toEqual({
         one_0: t.numericLiteral(0),
         any_1: [t.numericLiteral(1)],

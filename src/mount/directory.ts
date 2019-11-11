@@ -110,7 +110,8 @@ export class PseudoDirectory {
   get childrenDirs(): string[] {
     return this.children
       .filter((n: PseudoNode): n is PseudoFile => n.type === "dir")
-      .map(n => path.basename(n.pathFromRoot));
+      .map(n => path.basename(n.pathFromRoot))
+      .filter(p => p !== ".");
   }
   parent: PseudoDirectory | null;
   rootNodeRule: DirNodeRule;

@@ -1,12 +1,15 @@
 import { dir, mount } from "espolice";
-import { Index } from "./templates/index";
+const RouteIndex = require("./templates/index");
+import { TestIndex, TestSubmodule } from "./templates/test";
 import { Other } from "./templates/other";
 const OtherDir = dir()
-  .haveChildFile(Index, "index.js")
+  .haveChildFile(RouteIndex, "index.js")
   .otherChildrenFiles(Other);
 OtherDir.otherChildrenDirs(OtherDir);
 const RootDir = dir()
-  .haveChildFile(Index, "index.js")
+  .haveChildFile(RouteIndex, "index.js")
+  .haveChildFile(TestIndex, "test.js")
+  .haveChildFile(TestSubmodule, "testsub.js")
   .otherChildrenFiles(Other)
   .otherChildrenDirs(OtherDir);
 

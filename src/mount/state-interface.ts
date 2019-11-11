@@ -23,7 +23,7 @@ export const createStateInterface = (
       const nodes = getNodesFromNodeRulePath(nodeRulePath);
       if (nodes !== null) {
         nodes.forEach(node => {
-          node.sync();
+          node.sync(state.data);
         });
       }
     });
