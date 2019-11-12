@@ -65,7 +65,8 @@
     "unittest": "jest unittest",
     "e2e-test": "jest -i e2e-test",
     "build": "tsc --module commonjs && rollup -c rollup.config.ts",
-    "run-esp": "cd example/express; yarn run-esp"
+    "run-esp": "cd example/express; yarn run-esp",
+    "prepublish": "yarn build"
   },
   "jest": {
     "moduleFileExtensions": [
