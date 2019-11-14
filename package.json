@@ -9,10 +9,6 @@
   "repository": "https://github.com/KimotoYanke/espolice",
   "author": "KimotoYanke <kimotoyanke@gmail.com>",
   "license": "Apache",
-  "files": [
-    "dist/*",
-    "bin/*"
-  ],
   "dependencies": {
     "@babel/node": "^7.5.5",
     "@babel/types": "^7.4.4",
