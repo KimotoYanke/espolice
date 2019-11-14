@@ -10,7 +10,7 @@
   "author": "KimotoYanke <kimotoyanke@gmail.com>",
   "license": "Apache",
   "files": [
-    "*"
+    "dist/*"
   ],
   "dependencies": {
     "@babel/node": "^7.5.5",
