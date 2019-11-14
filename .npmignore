@@ -1,4 +1,6 @@
 example/
 src/
 
-test/e2e-test/test-environment
+test/
+.git/
+node_modules/
