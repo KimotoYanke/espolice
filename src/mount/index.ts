@@ -27,11 +27,6 @@ export const mount = (
 ) => {
   mkdirpSync(rootPath);
   const nOpts = normalizeOptions(options);
-  const watcher = chokidar.watch(rootPath, {
-    persistent: true,
-    ignoreInitial: true,
-    ignored: nOpts.ignore
-  });
 
   const dictNodeRulePathToFiles: DictNodeRulePathToFiles = {};
   const state: State = new State();
@@ -55,14 +50,13 @@ export const mount = (
     if (!nOpts.ext.includes(path.extname(pathFromRoot))) {
       return;
     }
-    if (nOpts.ignore)
-      if (event === "init") {
-        eventLog("FILE Found", pathFromRoot);
-      } else if (event === "add") {
-        eventLog("FILE Added", pathFromRoot);
-      } else {
-        eventLog("FILE Edited", pathFromRoot);
-      }
+    if (event === "init") {
+      eventLog("FILE Found", pathFromRoot);
+    } else if (event === "add") {
+      eventLog("FILE Added", pathFromRoot);
+    } else {
+      eventLog("FILE Edited", pathFromRoot);
+    }
     const thisFileNode =
       root.findNodeFromThis(pathFromRoot) ||
       addNewFile(
@@ -149,6 +143,11 @@ export const mount = (
   );
   root.pathFromRoot = ".";
   root.write();
+  const watcher = chokidar.watch(rootPath, {
+    persistent: true,
+    ignoreInitial: true,
+    ignored: nOpts.ignore
+  });
 
   watcher.on(
     "all",
@@ -161,7 +160,7 @@ export const mount = (
       if (!thisNodeRule) {
         return;
       }
-      switch (event as "add" | "addDir" | "change" | "unlink" | "unlinkDir") {
+      switch (event) {
         case "add":
         case "change":
           {

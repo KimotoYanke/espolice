@@ -1,8 +1,2 @@
-console.log("started!");
-console.log("finished: ");
-
-require("./a.js");
-
-require("./b.js");
-
-require("./c.js");
+console.log("Started app:", app.id);
+console.log("Finished app:", app.id);

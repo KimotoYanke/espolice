@@ -1,8 +1,24 @@
 // express.jsにおけるindex.jsの定義例
 const path = require("path");
 
-const RouteIndex = ({ getState, getParent }) => {
+const RouteIndex = ({ getState, getParent, getPath }) => {
   const parent = getParent();
+  const childrenHTML = $quasiquote =>
+    [
+      "<ul>",
+      /* @unquote-splicing */ parent.childrenFiles
+        .filter(childrenFile => childrenFile !== "index.js")
+        .map(childFile => $quasiquote =>
+          /* @literal */
+          '<li><a href="./' +
+          path.basename(childFile, ".js") +
+          '">' +
+          path.basename(childFile, ".js") +
+          "</a></li>"
+        ),
+      "</ul>"
+    ].join("");
+
   const result = $quasiquote => {
     const { Router } = require("express");
     const router = Router();
@@ -33,6 +49,10 @@ const RouteIndex = ({ getState, getParent }) => {
             "./" + childFile)
           )
       );
+
+    router.get("/", (req, res) => {
+      res.send(/* @unquote */ childrenHTML);
+    });
     module.exports = router;
   };
   return result;

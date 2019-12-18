@@ -1,8 +1,8 @@
 const { Router } = require("express");
 
 const router = Router();
-router.use("/f", require("./f"));
 router.use("/a", require("./a.js"));
-router.use("/d", require("./d.js"));
-router.use("/e", require("./e.js"));
+router.get("/", (req, res) => {
+  res.send(["<ul>", '<li><a href="./a">a</a></li>', "</ul>"].join(""));
+});
 module.exports = router;
