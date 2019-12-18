@@ -146,7 +146,7 @@ export class PseudoFile {
     const tmpl = this.template;
     const matched = patternMatchAST(tmpl, newAst, this.matched, false);
     if (matched) {
-      this.matched = { ...this.matched, ...matched, ...state };
+      this.matched = { ...matched, ...this.matched,  ...state };
       for (const key in matched) {
         if (!key.match(/^((one)|(some)|(any))_\d+$/)) {
           this.setStateDatum(key, matched[key]);
