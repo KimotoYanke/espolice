@@ -10,6 +10,18 @@ import { GroupResult } from "../../src/pattern-matcher/matched-list";
 
 describe("パターンマッチ", () => {
   describe("文字列でのテスト", () => {
+    test("通常文字列", () => {
+      const result = patternMatch(
+        "lorem ipsum".split(""),
+        "lorem ipsum".split(""),
+        {}
+      );
+      if (typeof result === "boolean") {
+        expect(result).not.toBeBoolean();
+        return;
+      }
+      expect(result).toEqual({});
+    });
     test("1回グループ化", () => {
       const result = patternMatch("lo*um".split(""), "lorem ipsum".split(""), {
         isGroup: str => (str === "*" ? { type: "MULTIPLE", as: "*" } : false)
@@ -393,6 +405,27 @@ describe("パターンマッチ", () => {
         one_2: t.numericLiteral(2),
         one_3: t.numericLiteral(3),
         any_4: [t.numericLiteral(4)]
+      });
+    });
+    test("@anyを囲む", () => {
+      const tmpl = template.program`a("@one");"@any";a("@one")`();
+      const obj0 = template.program`a("a");a("b")`();
+      const obj1 = template.program`a("a");b();a("b")`();
+
+      const result0 = patternMatchAST(tmpl, obj0, {});
+      expect(result0).not.toBeFalse();
+      expect(result0).toStrictEqual({
+        one_0: t.stringLiteral("a"),
+        any_1: [],
+        one_2: t.stringLiteral("b")
+      });
+
+      const result1 = patternMatchAST(tmpl, obj1, {});
+      expect(result1).not.toBeFalse();
+      expect(result1).toStrictEqual({
+        one_0: t.stringLiteral("a"),
+        any_1: [t.expressionStatement(t.callExpression(t.identifier("b"), []))],
+        one_2: t.stringLiteral("b")
       });
     });
   });

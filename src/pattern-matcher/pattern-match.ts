@@ -42,16 +42,26 @@ const patternMatchArray = <T extends IObject, O extends IObject>(
       switch (key.type) {
         case "MULTIPLE":
         case "ANY":
-          while (
-            (matched = patternMatch(happyEnd, obj.slice(j), opts)) === false
-          ) {
-            if (opts.debug) console.log("obj.slice(j):", obj.slice(j));
-            if (opts.debug) console.log("matched:", matched, happyEnd);
+          while (!(matched = patternMatch(happyEnd, obj.slice(j), opts))) {
+            if (opts.debug) {
+              console.log(
+                "matched = patternMatch(happyEnd, obj.slice(j), opts)"
+              );
+              console.log(
+                "matched = ",
+                matched,
+                ", happyEnd = ",
+                happyEnd,
+                ", obj.slice(j) = ",
+                obj.slice(j)
+              );
+            }
 
             thisGroup.push(obj[j]);
             j++;
             if (obj.slice(j).length === 0) {
-              if (opts.debug) console.log("tail(obj).length == 0");
+              if (opts.debug)
+                console.log("tail(obj).length == 0", obj.slice(j), j);
 
               return false;
             }
@@ -315,7 +325,11 @@ export const patternMatch = (
           result[key] = matchedList[key];
         }
       }
+    } else {
+      if (opts.debug) console.log("returns false");
+      return false;
     }
+    if (opts.debug) console.log("returns", result);
     return result;
   }
 
@@ -334,10 +348,23 @@ export const patternMatch = (
           result[key] = matchedList[key];
         }
       }
+    } else {
+      if (opts.debug) console.log("returns false");
+      return false;
     }
+    if (opts.debug) console.log("returns", result);
     return result;
   }
 
-  if (opts.debug) console.log("type:isEqual", "returns", deepEqual(tmpl, obj));
+  if (opts.debug)
+    console.log(
+      "type:isEqual",
+      "patternMatch(",
+      tmpl,
+      obj,
+      ")",
+      "returns",
+      deepEqual(tmpl, obj) ? {} : false
+    );
   return deepEqual(tmpl, obj) ? {} : false;
 };

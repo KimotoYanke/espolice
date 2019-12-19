@@ -16,9 +16,9 @@ const patternPreprocessWithCount = <T>(
 
   const tmplU = tmpl as unknown;
 
-  if (opts.debug)
+  /*if (opts.debug)
     console.log("patternPreprocess", { tmpl }, "isGroup", isGroup(tmplU));
-  if (opts.debug) console.log("generic", generic);
+  if (opts.debug) console.log("generic", generic);*/
   if (isGroup(tmplU)) {
     const key: false | GroupResult = isGroup(tmplU);
 

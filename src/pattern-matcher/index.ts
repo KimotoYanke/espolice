@@ -10,10 +10,10 @@ import { MatchedList } from "./matched-list";
 export const patternMatchAST = (
   tmpl: t.Node,
   obj: t.Node,
-  formerMatchedList: MatchedList,
+  formerMatchedList: MatchedList = {},
   debug?: boolean
 ) => {
-  return patternMatch(nodePurify(tmpl), nodePurify(obj), {
+  const result = patternMatch(nodePurify(tmpl), nodePurify(obj), {
     debug,
     isNode,
     isGroup,
@@ -21,6 +21,8 @@ export const patternMatchAST = (
     formerMatchedList,
     generic: ["one", "some", "any"]
   });
+  if (debug) console.log("patternMatchAST", result);
+  return result;
 };
 export const patternResetAST = (
   tmpl: t.Node,

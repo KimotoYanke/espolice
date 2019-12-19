@@ -1,7 +1,7 @@
 import { isGroup } from "../../src/node/is-group";
 import template from "@babel/template";
 import * as t from "@babel/types";
-import { patternMatchAST } from "../../src/pattern-matcher";
+import { patternMatchAST, patternResetAST } from "../../src/pattern-matcher";
 describe("ノード", () => {
   test("isGroup関数", () => {
     const tmplAstT1 = template.statement`"defaultFunc = @any"`();
@@ -219,5 +219,24 @@ describe("ノード", () => {
       one_0: t.objectExpression([]),
       one_1: t.objectExpression([])
     });
+  });
+  test("@anyを囲む", () => {
+    const tmpl = template.program`
+    console.log("Started app:", "appName = @one");
+    "@any"
+    console.log("Finished app:", "appName = @one");
+    `();
+    const obj0 = template.program`
+    console.log("Started app:", app.ie);
+    console.log("Finished app:", app.ie);
+        `();
+
+    const result0 = patternMatchAST(tmpl, obj0, {});
+    if (!result0) {
+      expect(result0).toBeTruthy();
+      return;
+    }
+
+    expect(patternResetAST(tmpl as t.Node, result0)).toEqual(obj0);
   });
 });
