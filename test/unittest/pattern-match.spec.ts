@@ -128,6 +128,29 @@ describe("パターンマッチ", () => {
         B: "ips".split("")
       });
     });
+    test("同期", () => {
+      const opts = {
+        isGroup: (str: string): GroupResult | false =>
+          str === "A" ? { type: "SINGLE", as: "A" } : false
+      };
+      const result1 = patternMatch(
+        "Aorem Apsum".split(""),
+        "lorem lpsum".split(""),
+        { ...opts }
+      );
+      if (!result1) {
+        expect(result1).toBeTruthy();
+        return;
+      }
+
+      const result2 = patternMatch("A A".split(""), "i l".split(""), {
+        ...opts,
+        formerMatchedList: result1
+      });
+      expect(result2).toStrictEqual({
+        A: "i"
+      });
+    });
   });
   describe("オブジェクトでのテスト", () => {
     test("オブジェクト", () => {
@@ -158,6 +181,30 @@ describe("パターンマッチ", () => {
         one_0: 1,
         one_1: 2,
         one_2: 3
+      });
+    });
+    test("同期", () => {
+      const one = template.expression`"a = @one"`();
+      const tmpl = { 1: one, 2: one } as unknown;
+      const obj1 = { 1: 1, 2: 1 } as unknown;
+      const obj2 = { 1: 1, 2: 2 } as unknown;
+
+      const result1 = patternMatch(nodePurify(tmpl) as t.Node, obj1 as t.Node, {
+        isGroup: isGroup
+      });
+      expect(result1).toEqual({
+        a: 1
+      });
+
+      if (!result1) {
+        return;
+      }
+      const result2 = patternMatch(nodePurify(tmpl) as t.Node, obj2 as t.Node, {
+        formerMatchedList: result1,
+        isGroup
+      });
+      expect(result2).toStrictEqual({
+        a: 2
       });
     });
   });

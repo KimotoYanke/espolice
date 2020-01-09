@@ -220,16 +220,26 @@ describe("ノード", () => {
       one_1: t.objectExpression([])
     });
   });
-  test("@anyを囲む", () => {
+  test("2 one", () => {
     const tmpl = template.program`
     console.log("Started app:", "appName = @one");
-    "@any"
+    "a=@one"
+    "a=@one"
     console.log("Finished app:", "appName = @one");
     `();
     const obj0 = template.program`
     console.log("Started app:", app.ie);
+    c;
+    c;
     console.log("Finished app:", app.ie);
         `();
+
+    const obj1 = template.program`
+    console.log("Started app:", app.ie);
+    xxx;
+    c;
+    console.log("Finished app:", app.ie);
+    `();
 
     const result0 = patternMatchAST(tmpl, obj0, {});
     if (!result0) {
@@ -238,5 +248,26 @@ describe("ノード", () => {
     }
 
     expect(patternResetAST(tmpl as t.Node, result0)).toEqual(obj0);
+
+    const result1 = patternMatchAST(tmpl, obj1, result0);
+    if (!result1) {
+      expect(result1).toBeTruthy();
+      return;
+    }
+
+    if (!t.isExpressionStatement(result1["a"])) {
+      console.log(result1);
+      expect(t.isExpressionStatement(result1["a"])).toBeTruthy();
+      return;
+    }
+
+    const ex = result1["a"].expression;
+
+    if (!t.isIdentifier(ex)) {
+      expect(t.isIdentifier(ex)).toBeTruthy();
+      return;
+    }
+
+    expect(ex.name).toEqual("xxx");
   });
 });

@@ -14,7 +14,8 @@ import { nodePurify } from "../node/node-purify";
 import { isFileExistSync, lsDirectorySync, rmpFileSync } from "./util";
 import { Options } from "./options";
 import { deepEqual } from "fast-equals";
-import { eventLog } from "../cli/util";
+import { eventLog, msgLog } from "../cli/util";
+import { diff } from "deep-diff";
 
 export const addNewFile = (
   pathFromRoot: string,
@@ -137,11 +138,14 @@ export class PseudoFile {
       getState: this.getState,
       getPath: () => this.pathFromRoot
     });
-    const tmpl = toProgram(tmplAst);
+    const tmpl = parse(generate(toProgram(tmplAst)).code, {
+      allowImportExportEverywhere: true
+    }).program;
     return tmpl;
   }
 
   matched: MatchedList = {};
+  lastObj: any = {};
   writeForNewAst(newAst: t.Node, state: MatchedList = {}) {
     const tmpl = this.template;
     const matched = patternMatchAST(tmpl, newAst, this.matched, false);
@@ -154,7 +158,25 @@ export class PseudoFile {
       Object.assign(this.matched, matched);
       Object.assign(this.matched, state);
     }
-    this.write();
+
+    const newObj = patternResetAST(this.template, { ...this.matched }, false);
+    if (deepEqual(newObj, newAst)) {
+      return;
+    }
+
+    if (!matched && deepEqual(newObj, this.lastObj)) {
+      msgLog("UNDO FILE", this.pathFromRoot, this.nodeRulePath || "");
+    } else {
+      msgLog("MODIFY FILE", this.pathFromRoot, this.nodeRulePath || "");
+    }
+
+    this.ast = newObj as t.Program;
+    this.flagIsWriting = true;
+    fs.writeFileSync(
+      path.join(this.rootPath, this.pathFromRoot),
+      this.generateCode(newObj)
+    );
+    this.lastObj = newObj;
   }
 
   get options(): Options {
@@ -182,18 +204,7 @@ export class PseudoFile {
     }
     return babeledCode;
   }
-  write() {
-    const newObj = patternResetAST(this.template, { ...this.matched }, false);
-    if (deepEqual(newObj, this.ast)) {
-      return;
-    }
-    this.ast = newObj as t.Program;
-    this.flagIsWriting = true;
-    fs.writeFileSync(
-      path.join(this.rootPath, this.pathFromRoot),
-      this.generateCode(newObj)
-    );
-  }
+  write() {}
 
   read() {
     if (!(fs.existsSync(this.path) && isFileExistSync(this.path))) {

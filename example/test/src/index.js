@@ -1,6 +1,4 @@
 console.log("Started app:", app.x);
-cof;
-a;
-bb;
-cof;
+c;
+c;
 console.log("Finished app:", app.x);
